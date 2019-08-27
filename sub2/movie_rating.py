@@ -71,7 +71,7 @@ for part in train_docs:
             word_indices[meaning]=idx
             idx+=1
     
-print(word_indices)
+# print(word_indices)
 
 # Req 1-1-4. sparse matrix 초기화
 # X: train feature data
@@ -111,7 +111,7 @@ for idx in range(len(test_data)):
     part = test_data[idx][2].split('\n')[0]
     Y_test[idx]=part
 
-print(Y)
+# print(Y)
 
 """
 트레이닝 파트
@@ -158,6 +158,8 @@ print("Logistic regression accuracy: {}".format(accuracy_score(Y_test, y_pred_LR
 # Req 1-4. pickle로 학습된 모델 데이터 저장
 fl = open('model.clf', 'wb')
 pickle.dump(clf, fl)
+pickle.dump(clf2, fl)
+pickle.dump(word_indices, fl)
 fl.close
     
 # Naive bayes classifier algorithm part
