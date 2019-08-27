@@ -20,41 +20,33 @@ slack_events_adaptor = SlackEventAdapter(SLACK_SIGNING_SECRET, "/listening", app
 slack_web_client = WebClient(token=SLACK_TOKEN)
 
 # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
-pickle_obj = open('model.clf', 'rb')
-
-clf = pickle.load(pickle_obj)
-clf2 = pickle.load(pickle_obj)
-word_indices = pickle.load(pickle_obj)
+pickle_obj = None
+word_indices = None
+clf = None
 
 # Req 2-2-2. 토큰화 및 one-hot 임베딩하는 전 처리
 def preprocess():
 
     return None
 
-# # Req 2-2-3. 긍정 혹은 부정으로 분류
-# def classify():
+# Req 2-2-3. 긍정 혹은 부정으로 분류
+def classify():
 
-#     return None
+    return None
     
-# # Req 2-2-4. app.db 를 연동하여 웹에서 주고받는 데이터를 DB로 저장
+# Req 2-2-4. app.db 를 연동하여 웹에서 주고받는 데이터를 DB로 저장
     
 
 # 챗봇이 멘션을 받았을 경우
-# @slack_events_adaptor.on("app_mention")
-# def app_mentioned(event_data):
-#     channel = event_data["event"]["channel"]
-#     text = event_data["event"]["text"]
-#     keywords = lin_pred(text)
-        
-#         slack_web_client.chat_postMessage(
-#             channel=channel,
-#             text=keywords
-#         )
+@slack_events_adaptor.on("app_mention")
+def app_mentioned(event_data):
+    channel = event_data["event"]["channel"]
+    text = event_data["event"]["text"]
 
 
-# @app.route("/", methods=["GET"])
-# def index():
-#     return "<h1>Server is ready.</h1>"
+@app.route("/", methods=["GET"])
+def index():
+    return "<h1>Server is ready.</h1>"
 
-# if __name__ == '__main__':
-#     app.run()
+if __name__ == '__main__':
+    app.run()

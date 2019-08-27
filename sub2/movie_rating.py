@@ -5,6 +5,7 @@ from konlpy.tag import Okt
 from scipy.sparse import lil_matrix
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 
 pos_tagger = Okt()
 # print(pos_tagger.nouns('한국어 분석을 시작합니다'))
@@ -131,11 +132,8 @@ clf2 = LogisticRegression(solver='lbfgs').fit(X,Y)
 # print(X_test[0])
 # print(Y_test[0])
 # # Req 1-3-1. 문장 데이터에 따른 예측된 분류값 출력
-print(Y_test[4])
 print("Naive bayesian classifier example result: {}, {}".format(test_data[4][1], clf.predict(X_test[4])[0]))
 print("Logistic regression exampleresult: {}, {}".format(test_data[4][1], clf2.predict(X_test[4])[0]))
-
-from sklearn.metrics import accuracy_score
 # # Req 1-3-2. 정확도 출력
 y_pred_temp = []
 y_pred_temp2 = []
