@@ -21,12 +21,12 @@ def read_data(filename):
     data = []
     with open(filename, 'r',encoding='UTF-8') as f:
         for line in f:
-            # if line.startswith("i"):
-            #     continue
-            # else:
-            temp = line.split('\t')
-            data += [temp]
-        return data[1:]
+            if line.startswith("i"):
+                continue
+            else:
+                temp = line.split('\t')
+                data += [temp]
+        return data
 
 
 """
@@ -49,8 +49,8 @@ def tokenize(doc):
 """
 
 # train, test 데이터 읽기
-train_data = read_data('ratings_train.txt')
-test_data = read_data('ratings_test.txt')
+train_data = read_data('train.txt')
+test_data = read_data('test.txt')
 
 
 # Req 1-1-2. 문장 데이터 토큰화
@@ -73,8 +73,7 @@ for part in train_docs:
             word_indices[meaning]=idx
             idx+=1
     
-print(word_indices)
-
+# print(word_indices)
 
 # Req 1-1-4. sparse matrix 초기화
 # X: train feature data
@@ -114,6 +113,7 @@ for idx in range(len(test_data)):
     part = test_data[idx][2].split('\n')[0]
     Y_test[idx]=part
 
+# print(Y)
 
 """
 트레이닝 파트
@@ -133,11 +133,8 @@ clf2 = LogisticRegression(solver='lbfgs').fit(X,Y)
 # print(X_test[0])
 # print(Y_test[0])
 # # Req 1-3-1. 문장 데이터에 따른 예측된 분류값 출력
-print(Y_test[4])
 print("Naive bayesian classifier example result: {}, {}".format(test_data[4][1], clf.predict(X_test[4])[0]))
 print("Logistic regression exampleresult: {}, {}".format(test_data[4][1], clf2.predict(X_test[4])[0]))
-
-from sklearn.metrics import accuracy_score
 # # Req 1-3-2. 정확도 출력
 y_pred_temp = []
 y_pred_temp2 = []
