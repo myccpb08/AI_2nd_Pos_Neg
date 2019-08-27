@@ -48,8 +48,8 @@ def tokenize(doc):
 """
 
 # train, test 데이터 읽기
-train_data = read_data('ratings_train.txt')
-test_data = read_data('ratings_test.txt')
+train_data = read_data('train.txt')
+test_data = read_data('test.txt')
 
 
 # Req 1-1-2. 문장 데이터 토큰화
@@ -71,7 +71,7 @@ for part in train_docs:
             word_indices[meaning]=idx
             idx+=1
     
-# print(word_indices)
+print(word_indices)
 
 # Req 1-1-4. sparse matrix 초기화
 # X: train feature data
@@ -79,12 +79,11 @@ for part in train_docs:
 X = lil_matrix((len(train_docs), len(word_indices)))
 X_test = lil_matrix((len(test_docs), len(word_indices)))
 
-
 # 평점 label 데이터가 저장될 Y 행렬 초기화
 # Y: train data label
 # Y_test: test data label
-Y = np.zeros((len(train_docs),1))
-Y_test = np.zeros((len(test_docs),1))
+Y = np.zeros(len(train_docs))
+Y_test = np.zeros(len(test_docs))
 
 # Req 1-1-5. one-hot 임베딩
 # X,Y 벡터값 채우기
@@ -95,7 +94,6 @@ for idx in range(len(train_docs)):
         part = verb.split('/')[0]
         temp[word_indices[part]]=1
     X[idx]=temp
-
 
 for idx in range(len(test_docs)):
     temp = [0]*len(word_indices)
@@ -109,42 +107,58 @@ for idx in range(len(train_data)):
     part = train_data[idx][2].split('\n')[0]
     Y[idx]=part
 
-
 for idx in range(len(test_data)):
     part = test_data[idx][2].split('\n')[0]
     Y_test[idx]=part
+
+print(Y)
 
 """
 트레이닝 파트
 clf  <- Naive baysian mdoel
 clf2 <- Logistic regresion model
 """
-
 # Req 1-2-1. Naive baysian mdoel 학습
-clf = None
+clf = MultinomialNB().fit(X, Y)
 
 # Req 1-2-2. Logistic regresion mdoel 학습
-clf2 = None
+clf2 = LogisticRegression(solver='lbfgs').fit(X,Y)
 
 
-"""
-테스트 파트
-"""
+# """
+# 테스트 파트
+# """
+# print(X_test[0])
+# print(Y_test[0])
+# # Req 1-3-1. 문장 데이터에 따른 예측된 분류값 출력
+print(Y_test[4])
+print("Naive bayesian classifier example result: {}, {}".format(test_data[4][1], clf.predict(X_test[4])[0]))
+print("Logistic regression exampleresult: {}, {}".format(test_data[4][1], clf2.predict(X_test[4])[0]))
 
-# Req 1-3-1. 문장 데이터에 따른 예측된 분류값 출력
-print("Naive bayesian classifier example result: {}, {}".format(test_data[3][1],None))
-print("Logistic regression exampleresult: {}, {}".format(test_data[3][1],None))
+from sklearn.metrics import accuracy_score
+# # Req 1-3-2. 정확도 출력
+y_pred_temp = []
+y_pred_temp2 = []
+for data in X_test:
+    y_pred_temp.append(clf.predict(data)[0])
+    y_pred_temp2.append(clf2.predict(data)[0])
+y_pred_NB = np.array(y_pred_temp)
+y_pred_LR = np.array(y_pred_temp2)
+# print(y_pred_NB)
+# print(y_pred_LR)
+# print(Y_test)
+# print(accuracy_score(y_pred_NB, Y_test))
+print("Naive bayesian classifier accuracy: {}".format(accuracy_score(Y_test, y_pred_NB)))
+print("Logistic regression accuracy: {}".format(accuracy_score(Y_test, y_pred_LR)))
 
-# Req 1-3-2. 정확도 출력
-print("Naive bayesian classifier accuracy: {}".format(None))
-print("Logistic regression accuracy: {}".format(None))
-
-"""
-데이터 저장 파트
-"""
+# """
+# 데이터 저장 파트
+# """
 
 # Req 1-4. pickle로 학습된 모델 데이터 저장
-
+fl = open('model.clf', 'wb')
+pickle.dump(clf, fl)
+fl.close
     
 # Naive bayes classifier algorithm part
 # 아래의 코드는 심화 과정이기에 사용하지 않는다면 주석 처리하고 실행합니다.
