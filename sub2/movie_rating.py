@@ -359,7 +359,7 @@ class Logistic_Regression_Classifier(object):
     
     def gradient_beta(self, X, error, lr):
         # beta_x를 업데이트하는 규칙을 정의한다.
-        beta_x_delta = -(lr/len(error)*(np.dot(X.T, error))) # (X.shape[1], 1)
+        beta_x_delta = -(lr/len(X.T)*(np.dot(X.T, error))) # (X.shape[1], 1)
         # beta_c를 업데이트하는 규칙을 정의한다.
         beta_c_delta = -(lr*np.mean(error))
         return beta_x_delta, beta_c_delta
