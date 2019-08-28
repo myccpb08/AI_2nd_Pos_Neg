@@ -21,9 +21,6 @@ def read_data(filename):
     data = []
     with open(filename, 'r',encoding='UTF-8') as f:
         for line in f:
-            # if line.startswith("id"):
-            #     continue
-            # else:
             temp = line.split('\t')
             data += [temp]
         return data[1:]
