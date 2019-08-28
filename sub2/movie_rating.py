@@ -334,7 +334,7 @@ class Logistic_Regression_Classifier(object):
     인풋값의 sigmoid 함수 값을 리턴
     """
     def sigmoid(self,z):
-        hypothesis = 1/(1+np.exp(-z))
+        hypothesis = 1/(1+np.exp(-1*z))
         return hypothesis
 
     """
@@ -359,9 +359,9 @@ class Logistic_Regression_Classifier(object):
     
     def gradient_beta(self, X, error, lr):
         # beta_x를 업데이트하는 규칙을 정의한다.
-        beta_x_delta = -(lr/len(X.T)*(np.dot(X.T, error))) # (X.shape[1], 1)
+        beta_x_delta = lr*np.dot(X.T, error)/len(X.T) # (X.shape[1], 1)
         # beta_c를 업데이트하는 규칙을 정의한다.
-        beta_c_delta = -(lr*np.mean(error))
+        beta_c_delta = lr*np.mean(error)
         return beta_x_delta, beta_c_delta
 
     """
@@ -415,7 +415,7 @@ class Logistic_Regression_Classifier(object):
 
     def classify(self, X_test):
         prob_Y = self.sigmoid(np.dot(X_test, self.beta_x) + self.beta_c)
-        return prob_Y > 0.5 
+        return prob_Y >= 0.5 
 
     """
     Req 3-3-6.
