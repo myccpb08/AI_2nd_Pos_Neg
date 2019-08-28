@@ -22,9 +22,9 @@ def read_data(filename):
     with open(filename, 'r',encoding='UTF-8') as f:
         for line in f:
             temp = line.split('\t')
-            data += [temp]
-        return data[1:]
-
+            if temp[1] != "document":
+                data += [temp]
+        return data
 
 """
 Req 1-1-2. 토큰화 함수
