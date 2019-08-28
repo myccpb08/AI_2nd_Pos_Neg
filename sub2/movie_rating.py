@@ -46,8 +46,8 @@ def tokenize(doc):
 """
 
 # train, test 데이터 읽기
-train_data = read_data('train.txt')
-test_data = read_data('test.txt')
+train_data = read_data('ratings_train.txt')
+test_data = read_data('ratings_test.txt')
 
 
 # Req 1-1-2. 문장 데이터 토큰화
@@ -156,7 +156,7 @@ pickle.dump(clf, fl)
 pickle.dump(clf2, fl)
 pickle.dump(word_indices, fl)
 fl.close
-    
+
 # Naive bayes classifier algorithm part
 # 아래의 코드는 심화 과정이기에 사용하지 않는다면 주석 처리하고 실행합니다.
 
@@ -313,142 +313,149 @@ class Naive_Bayes_Classifier(object):
         return answer
 
 # Req 3-2-1. model에 Naive_Bayes_Classifier 클래스를 사용하여 학습합니다.
-model = Naive_Bayes_Classifier()
-model.train(X, Y)
+# model = Naive_Bayes_Classifier()
+# model.train(X, Y)
 
-# Req 3-2-2. 정확도 측정
-print("Naive_Bayes_Classifier accuracy: {}".format(model.score(X_test, Y_test)))
+# # Req 3-2-2. 정확도 측정
+# print("Naive_Bayes_Classifier accuracy: {}".format(model.score(X_test, Y_test)))
 
 # # Logistic regression algorithm part
 # # 아래의 코드는 심화 과정이기에 사용하지 않는다면 주석 처리하고 실행합니다.
 
-# """
-# Logistic_Regression_Classifier 알고리즘 클래스입니다.
-# """
+"""
+Logistic_Regression_Classifier 알고리즘 클래스입니다.
+"""
 
-# class Logistic_Regression_Classifier(object):
+class Logistic_Regression_Classifier(object):
     
-#     """
-#     Req 3-3-1.
-#     sigmoid():
-#     인풋값의 sigmoid 함수 값을 리턴
-#     """
-#     def sigmoid(self,z):
+    """
+    Req 3-3-1.
+    sigmoid():
+    인풋값의 sigmoid 함수 값을 리턴
+    """
+    def sigmoid(self,z):
+        hypothesis = 1/(1+np.exp(-1*z))
+        return hypothesis
+
+    """
+    Req 3-3-2.
+    prediction():
+    X 데이터와 beta값들을 받아서 예측 확률P(class=1)을 계산.
+    X 행렬의 크기와 beta의 행렬 크기를 맞추어 계산.
+    ex) sigmoid(            X           x(행렬곱)       beta_x.T    +   beta_c)       
+                (데이터 수, feature 수)             (feature 수, 1)
+    """
+
+    def prediction(self, beta_x, beta_c, X):
+        # 예측 확률 P(class=1)을 계산하는 식을 만든다.
+        pred_res = np.dot(X, beta_x) + beta_c
+        return self.sigmoid(pred_res)
+
+    """
+    Req 3-3-3.
+    gradient_beta():
+    beta값에 해당되는 gradient값을 계산하고 learning rate를 곱하여 출력.
+    """
+    
+    def gradient_beta(self, X, error, lr):
+        # beta_x를 업데이트하는 규칙을 정의한다.
+        beta_x_delta = lr*np.dot(X.T, error)/len(X.T) # (X.shape[1], 1)
+        # beta_c를 업데이트하는 규칙을 정의한다.
+        beta_c_delta = lr*np.mean(error)
+        return beta_x_delta, beta_c_delta
+
+    """
+    Req 3-3-4.
+    train():
+    Logistic Regression 학습을 위한 함수.
+    학습데이터를 받아서 최적의 sigmoid 함수으로 근사하는 가중치 값을 리턴.
+
+    알고리즘 구성
+    1) 가중치 값인 beta_x_i, beta_c_i 초기화
+    2) Y label 데이터 reshape
+    3) 가중치 업데이트 과정 (iters번 반복) 
+    3-1) prediction 함수를 사용하여 error 계산
+    3-2) gadient_beta 함수를 사용하여 가중치 값 업데이트
+    4) 최적화 된 가중치 값들 리턴
+       self.beta_x, self.beta_c
+    """
+    
+    def train(self, X, Y):
+        # Req 3-3-8. learning rate 조절
+        # 학습률(learning rate)를 설정한다.(권장: 1e-3 ~ 1e-6)
+        lr = 0.7
+        # 반복 횟수(iteration)를 설정한다.(자연수)
+        iters = 20000
         
-#         return None
-
-#     """
-#     Req 3-3-2.
-#     prediction():
-#     X 데이터와 beta값들을 받아서 예측 확률P(class=1)을 계산.
-#     X 행렬의 크기와 beta의 행렬 크기를 맞추어 계산.
-#     ex) sigmoid(            X           x(행렬곱)       beta_x.T    +   beta_c)       
-#                 (데이터 수, feature 수)             (feature 수, 1)
-#     """
-
-#     def prediction(self, beta_x, beta_c, X):
-#         # 예측 확률 P(class=1)을 계산하는 식을 만든다.
+        # beta_x, beta_c값을 업데이트 하기 위하여 beta_x_i, beta_c_i값을 초기화
+        beta_x_i = np.zeros((X.shape[1], 1)) + 0.15
+        beta_c_i = -3
     
-#         return None
-
-#     """
-#     Req 3-3-3.
-#     gradient_beta():
-#     beta값에 해당되는 gradient값을 계산하고 learning rate를 곱하여 출력.
-#     """
-    
-#     def gradient_beta(self, X, error, lr):
-#         # beta_x를 업데이트하는 규칙을 정의한다.
-#         beta_x_delta = None
-#         # beta_c를 업데이트하는 규칙을 정의한다.
-#         beta_c_delta = None
-    
-#         return beta_x_delta, beta_c_delta
-
-#     """
-#     Req 3-3-4.
-#     train():
-#     Logistic Regression 학습을 위한 함수.
-#     학습데이터를 받아서 최적의 sigmoid 함수으로 근사하는 가중치 값을 리턴.
-
-#     알고리즘 구성
-#     1) 가중치 값인 beta_x_i, beta_c_i 초기화
-#     2) Y label 데이터 reshape
-#     3) 가중치 업데이트 과정 (iters번 반복) 
-#     3-1) prediction 함수를 사용하여 error 계산
-#     3-2) gadient_beta 함수를 사용하여 가중치 값 업데이트
-#     4) 최적화 된 가중치 값들 리턴
-#        self.beta_x, self.beta_c
-#     """
-    
-#     def train(self, X, Y):
-#         # Req 3-3-8. learning rate 조절
-#         # 학습률(learning rate)를 설정한다.(권장: 1e-3 ~ 1e-6)
-#         lr = 1e-2
-#         # 반복 횟수(iteration)를 설정한다.(자연수)
-#         iters = 200
-        
-#         # beta_x, beta_c값을 업데이트 하기 위하여 beta_x_i, beta_c_i값을 초기화
-#         beta_x_i = None
-#         beta_c_i = None
-    
-#         #행렬 계산을 위하여 Y데이터의 사이즈를 (len(Y),1)로 저장합니다.
-#         Y=None
-    
-#         for i in range(iters):
-#             #실제 값 Y와 예측 값의 차이를 계산하여 error를 정의합니다.
-#             error = None
-#             #gredient_beta함수를 통하여 델타값들을 업데이트 합니다.
-#             beta_x_delta, beta_c_delta = self.gradient_beta(None)
-#             beta_x_i -= beta_x_delta.T
-#             beta_c_i -= beta_c_delta
+        #행렬 계산을 위하여 Y데이터의 사이즈를 (len(Y),1)로 저장합니다.
+        Y= Y.reshape(len(Y), 1)
+        X = X.toarray()
+        for i in range(iters):
+            #실제 값 Y와 예측 값의 차이를 계산하여 error를 정의합니다.
+            error = self.prediction(beta_x_i, beta_c_i, X) - Y 
+            #gredient_beta함수를 통하여 델타값들을 업데이트 합니다.
+            beta_x_delta, beta_c_delta = self.gradient_beta(X, error, lr)
+            beta_x_i -= beta_x_delta
+            beta_c_i -= beta_c_delta
             
-#         self.beta_x = beta_x_i
-#         self.beta_c = beta_c_i
+        self.beta_x = beta_x_i
+        self.beta_c = beta_c_i
         
-#         return None
+        return None
 
-#     """
-#     Req 3-3-5.
-#     classify():
-#     확률값을 0.5 기준으로 큰 값은 1, 작은 값은 0으로 리턴
-#     """
+    """
+    Req 3-3-5.
+    classify():
+    확률값을 0.5 기준으로 큰 값은 1, 작은 값은 0으로 리턴
+    """
 
-#     def classify(self, X_test):
-        
-#         return None
+    def classify(self, X_test):
+        prob_Y = self.sigmoid(np.dot(X_test, self.beta_x) + self.beta_c)
+        return prob_Y >= 0.5 
 
-#     """
-#     Req 3-3-6.
-#     predict():
-#     테스트 데이터에 대해서 예측 label값을 출력해주는 함수
-#     """
+    """
+    Req 3-3-6.
+    predict():
+    테스트 데이터에 대해서 예측 label값을 출력해주는 함수
+    """
     
-#     def predict(self, X_test):
-#         predictions = []
-#         X_test=X_test.toarray()
-#         if (len(X_test)==1):
-#             predictions.append(None)
-#         else:
-#             for case in X_test:
-#                 predictions.append(None)
+    def predict(self, X_test):
+        predictions = []
+        X_test=X_test.toarray()
+        if (len(X_test)==1):
+            predictions.append(self.classify(X_test[0]))
+        else:
+            for case in X_test:
+                predictions.append(self.classify(case))
         
-#         return predictions
+        return np.array(predictions)
 
 
-#     """
-#     Req 3-3-7.
-#     score():
-#     테스트를 데이터를 받아 예측된 데이터(predict 함수)와
-#     테스트 데이터의 label값을 비교하여 정확도를 계산
-#     """
+    """
+    Req 3-3-7.
+    score():
+    테스트를 데이터를 받아 예측된 데이터(predict 함수)와
+    테스트 데이터의 label값을 비교하여 정확도를 계산
+    """
     
-#     def score(self, X_test, Y_test):
+    def score(self, X_test, Y_test):
+        predictions = self.predict(X_test)
+        mom = len(Y_test)
+        cnt = 0
+        for idx in range(mom):
+            if int(predictions[idx])==int(Y_test[idx]):
+                cnt +=1
+        answer = cnt/mom*100
+        return answer
 
-#         return None
+# Req 3-4-1. model2에 Logistic_Regression_Classifier 클래스를 사용하여 학습합니다.
+model2 = Logistic_Regression_Classifier()
+model2.train(X, Y)
 
-# # Req 3-4-1. model2에 Logistic_Regression_Classifier 클래스를 사용하여 학습합니다.
-# model2 = None
+# Req 3-4-2. 정확도 측정
 
-# # Req 3-4-2. 정확도 측정
-# print("Logistic_Regression_Classifier accuracy: {}".format(None))
+print("Logistic_Regression_Classifier accuracy: {}".format(model2.score(X_test, Y_test)))
