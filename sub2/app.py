@@ -54,12 +54,10 @@ import json
 send_data = {
     "attachments": [
         {
-            "fallback": "Network traffic (kb/s): How does this look? @slack-ops - Sent by Julie Dodd - https://google.com",
-            "title": "Network traffic (kb/s)",
-            "title_link": "https://google.com",
-            "text": "How does this look? @slack-ops - Sent by Julie Dodd",
-            "image_url": "https://i.pinimg.com/originals/2c/21/8f/2c218fa1247ce35d20cb618e9f3049d4.gif",
-            "color": "#764FA5"
+            
+            "imgPath": "img/prods/levisbluedemin01.jpg"
+
+
         }
     ]
 }
@@ -72,7 +70,7 @@ def classify(doc):
         return json_data
     else:
         return json_data
-print(classify("이 영화 정말 재밌다."))
+# print(classify("이 영화 정말 재밌다."))
     
 # # Req 2-2-4. app.db 를 연동하여 웹에서 주고받는 데이터를 DB로 저장
 
@@ -85,11 +83,16 @@ def app_mentioned(event_data):
     # keywords = "hello"
     keywords = classify(text.split(">")[1])
         
-    slack_web_client.chat_postMessage(
-        channel=channel,
-        text=keywords
+    # slack_web_client.chat_postMessage(
+    #     channel=channel,
+    #     text=keywords
+    # )
+    print(keywords)
+    response = slack_web_client.files_upload(
+        channels=channel,
+        file="GoodOmpangi.gif"
     )
-
+    assert response["ok"]
 
 @app.route("/", methods=["GET"])
 def index():
