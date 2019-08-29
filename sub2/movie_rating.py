@@ -53,6 +53,7 @@ test_data = read_data('ratings_test.txt')
 # Req 1-1-2. 문장 데이터 토큰화
 # train_docs, test_docs : 토큰화된 트레이닝, 테스트  문장에 label 정보를 추가한 list
 train_docs = tokenize(train_data)
+# print(train_docs[0])
 test_docs = tokenize(test_data)
 
 
