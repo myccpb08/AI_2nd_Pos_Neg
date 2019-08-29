@@ -11,14 +11,14 @@ from slack import WebClient
 from slackeventsapi import SlackEventAdapter
 from scipy.sparse import lil_matrix
 
-
 # slack 연동 정보 입력 부분
-SLACK_TOKEN = "xoxb-731166603924-741441211334-Utv5GC3CFUPRnGA30LiKqLXk"
-SLACK_SIGNING_SECRET = "a7569a13748b1861460d8d41db1a24be"
+SLACK_TOKEN = "xoxb-724397827219-739240775904-5fQc8gC6RkZRx0MTFu2ol2Ia"
+SLACK_SIGNING_SECRET = "f8cdb41515e9fa9fafdcf64c57ac3850"
 
 app = Flask(__name__)
 
-slack_events_adaptor = SlackEventAdapter(SLACK_SIGNING_SECRET, "/listening", app)
+slack_events_adaptor = SlackEventAdapter(
+    SLACK_SIGNING_SECRET, "/listening", app)
 slack_web_client = WebClient(token=SLACK_TOKEN)
 
 # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
@@ -78,25 +78,31 @@ def classify(doc):
 # 챗봇이 멘션을 받았을 경우
 @slack_events_adaptor.on("app_mention")
 def app_mentioned(event_data):
+    
     channel = event_data["event"]["channel"]
     text = event_data["event"]["text"]
-    # keywords = "hello"
-    keywords = classify(text.split(">")[1])
-        
-    # slack_web_client.chat_postMessage(
-    #     channel=channel,
-    #     text=keywords
-    # )
-    print(keywords)
-    response = slack_web_client.files_upload(
-        channels=channel,
-        file="GoodOmpangi.gif"
+    keywords = "helloooo"
+
+    # db에 저장
+    con = sqlite3.connect('./app.db')
+    cur = con.cursor()
+
+    msg = text.split("> ")[1]
+    # print(msg)
+    cur.execute('INSERT INTO search_history(query) VALUES(?)', (msg,))
+    con.commit()
+    cur.close()
+
+    slack_web_client.chat_postMessage(
+        channel=channel,
+        text=keywords
     )
-    assert response["ok"]
+
 
 @app.route("/", methods=["GET"])
 def index():
     return "<h1>Server is ready.</h1>"
+
 
 if __name__ == '__main__':
     app.run()
