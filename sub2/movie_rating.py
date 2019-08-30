@@ -17,31 +17,27 @@ Req 1-1-1. 데이터 읽기
 read_data(): 데이터를 읽어서 저장하는 함수
 """
 
-
 def read_data(filename):
     data = []
-    with open(filename, 'r', encoding='UTF-8') as f:
+    with open(filename, 'r',encoding='UTF-8') as f:
         for line in f:
             temp = line.split('\t')
             if temp[1] != "document":
                 data += [temp]
         return data
 
-
 """
 Req 1-1-2. 토큰화 함수
 tokenize(): 텍스트 데이터를 받아 KoNLPy의 okt 형태소 분석기로 토크나이징
 """
 
-
 def tokenize(doc):
     total_pos = []
     for sentence in doc:
         check_sentence = sentence[1]
-        result = [
-            '/'.join(t) for t in pos_tagger.pos(check_sentence, norm=True, stem=True)]
+        result = ['/'.join(t) for t in pos_tagger.pos(check_sentence, norm=True, stem=True)]
         total_pos += [result]
-
+            
     return total_pos
 
 
@@ -63,6 +59,7 @@ test_data = read_data('ratings_test_test.txt')
 # Req 1-1-2. 문장 데이터 토큰화
 # train_docs, test_docs : 토큰화된 트레이닝, 테스트  문장에 label 정보를 추가한 list
 train_docs = tokenize(train_data)
+# print(train_docs[0])
 test_docs = tokenize(test_data)
 
 
@@ -75,10 +72,10 @@ idx = 0
 for part in train_docs:
     for k in part:
         meaning = k.split('/')[0]
-        if word_indices.get(meaning) == None:
-            word_indices[meaning] = idx
-            idx += 1
-
+        if word_indices.get(meaning)==None:
+            word_indices[meaning]=idx
+            idx+=1
+#print(word_indices)
 # print(word_indices)
 
 # Req 1-1-4. sparse matrix 초기화
@@ -100,25 +97,24 @@ for idx in range(len(train_docs)):
     temp = [0]*len(word_indices)
     for verb in train_docs[idx]:
         part = verb.split('/')[0]
-        temp[word_indices[part]] = 1
-    X[idx] = temp
+        temp[word_indices[part]]=1
+    X[idx]=temp
 
 for idx in range(len(test_docs)):
     temp = [0]*len(word_indices)
     for verb in test_docs[idx]:
         part = verb.split('/')[0]
-        if word_indices.get(part) != None:
-            temp[word_indices[part]] = 1
-    X_test[idx] = temp
+        if word_indices.get(part)!=None:
+            temp[word_indices[part]]=1
+    X_test[idx]=temp
 
 for idx in range(len(train_data)):
     part = train_data[idx][2].split('\n')[0]
-    Y[idx] = part
+    Y[idx]=part
 
 for idx in range(len(test_data)):
     part = test_data[idx][2].split('\n')[0]
-    Y_test[idx] = part
-
+    Y_test[idx]=part
 
 """
 트레이닝 파트
@@ -169,8 +165,6 @@ pickle.dump(clf2, fl)
 pickle.dump(word_indices, fl)
 fl.close
 
-# # Naive bayes classifier algorithm part
-# # 아래의 코드는 심화 과정이기에 사용하지 않는다면 주석 처리하고 실행합니다.
 
 
 # """
@@ -345,9 +339,9 @@ fl.close
 # # # 아래의 코드는 심화 과정이기에 사용하지 않는다면 주석 처리하고 실행합니다.
 
 
-# """
-# Logistic_Regression_Classifier 알고리즘 클래스입니다.
-# """
+"""
+Logistic_Regression_Classifier 알고리즘 클래스입니다.
+"""
 
 
 # class Logistic_Regression_Classifier(object):
