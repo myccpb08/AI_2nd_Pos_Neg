@@ -7,6 +7,9 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
+import json
+import os
+
 pos_tagger = Okt()
 # print(pos_tagger.nouns('한국어 분석을 시작합니다'))
 # print(pos_tagger.morphs('한국어 분석을 시작합니다'))
@@ -48,18 +51,30 @@ def tokenize(doc):
 # train, test 데이터 읽기
 train_data = read_data('ratings_train.txt')
 test_data = read_data('ratings_test.txt')
-
+print("1. ___Data preprocessing complete____")
 
 # Req 1-1-2. 문장 데이터 토큰화
 # train_docs, test_docs : 토큰화된 트레이닝, 테스트  문장에 label 정보를 추가한 list
-train_docs = tokenize(train_data)
-test_docs = tokenize(test_data)
+# 태깅 후 json 파일로 저장
+# 태깅이 완료된 json 파일이 존재하면 토큰화를 반복하지 않음
+if os.path.isfile('train_do.json'):
+    with open('train_docs.json', 'r', encoding="utf-8") as f:
+        train_docs = json.load(f)
+    with open('test_docs.json', 'r', encoding="utf-8") as f:
+        test_docs = json.load(f)
+else:
+    train_docs = tokenize(train_data)
+    test_docs = tokenize(test_data)
+    with open('train_docs.json', 'w', encoding="utf-8") as make_file:
+        json.dump(train_docs, make_file, ensure_ascii=False, indent="\t")
+    with open('test_docs.json', 'w', encoding="utf-8") as make_file:
+        json.dump(test_docs, make_file, ensure_ascii=False, indent="\t")
 
+print("2. ___Data Tokenization complete____")
 
 # Req 1-1-3. word_indices 초기화
 
 word_indices = {}
-
 # Req 1-1-3. word_indices 채우기
 idx = 0
 for part in train_docs:
@@ -68,6 +83,7 @@ for part in train_docs:
         if word_indices.get(meaning)==None:
             word_indices[meaning]=idx
             idx+=1
+print("3. ___Word Indice Complete____")
 #print(word_indices)
 # print(word_indices)
 
@@ -76,12 +92,14 @@ for part in train_docs:
 # X_test: test feature data
 X = lil_matrix((len(train_docs), len(word_indices)))
 X_test = lil_matrix((len(test_docs), len(word_indices)))
+print("4. ___X, X_test sparse matrix Init____")
 
 # 평점 label 데이터가 저장될 Y 행렬 초기화
 # Y: train data label
 # Y_test: test data label
 Y = np.zeros(len(train_docs))
 Y_test = np.zeros(len(test_docs))
+print("5. ___Y, Y_test sparse matrix Init____")
 
 # Req 1-1-5. one-hot 임베딩
 # X,Y 벡터값 채우기
@@ -92,7 +110,7 @@ for idx in range(len(train_docs)):
         part = verb.split('/')[0]
         temp[word_indices[part]]=1
     X[idx]=temp
-
+print("6. ___X one-hot embedding Complete____")
 for idx in range(len(test_docs)):
     temp = [0]*len(word_indices)
     for verb in test_docs[idx]:
@@ -100,7 +118,7 @@ for idx in range(len(test_docs)):
         if word_indices.get(part)!=None:
             temp[word_indices[part]]=1
     X_test[idx]=temp
-
+print("7. ___X_test one-hot embedding Complete____")
 for idx in range(len(train_data)):
     part = train_data[idx][2].split('\n')[0]
     Y[idx]=part
@@ -108,7 +126,7 @@ for idx in range(len(train_data)):
 for idx in range(len(test_data)):
     part = test_data[idx][2].split('\n')[0]
     Y_test[idx]=part
-
+print("8. ___Y, Y_test processing Complete____")
 # print(Y)
 
 """
@@ -126,11 +144,9 @@ clf2 = LogisticRegression(solver='lbfgs').fit(X,Y)
 # """
 # 테스트 파트
 # """
-# print(X_test[0])
-# print(Y_test[0])
 # # Req 1-3-1. 문장 데이터에 따른 예측된 분류값 출력
-print("Naive bayesian classifier example result: {}, {}".format(test_data[4][1], clf.predict(X_test[4])[0]))
-print("Logistic regression exampleresult: {}, {}".format(test_data[4][1], clf2.predict(X_test[4])[0]))
+# print("Naive bayesian classifier example result: {}, {}".format(test_data[4][1], clf.predict(X_test[4])[0]))
+# print("Logistic regression exampleresult: {}, {}".format(test_data[4][1], clf2.predict(X_test[4])[0]))
 # # Req 1-3-2. 정확도 출력
 y_pred_temp = []
 y_pred_temp2 = []
