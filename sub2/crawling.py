@@ -2,8 +2,6 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-from urllib import parse
-
 pn = 6
 
 
@@ -18,21 +16,6 @@ def get_movie_links():
         movie_links.append("https://movie.naver.com"+temp +
                            "&type=after&onlyActualPointYn=Y")
     return movie_links
-
-
-def get_movie_links_bySearch(search_mv):
-
-    url = "https://movie.naver.com/movie/search/result.nhn?query=" + \
-        parse.quote(search_mv) + "&section=all&ie=utf8"
-
-    find_html = urlopen(url)
-    bsObject = BeautifulSoup(find_html, "html.parser")
-    ul = bsObject.body.find('ul', {"class": "search_list_1"})
-
-    temp = ul.find('a').get('href')
-
-    movie_link = "https://movie.naver.com" + temp
-    return movie_link
 
 
 def get_reple_link(url):

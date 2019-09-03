@@ -3,23 +3,25 @@ from threading import Thread
 import sqlite3
 import numpy as np
 import time
+import json
 
 from konlpy.tag import Okt
-from flask import Flask
+from flask import Flask, request, make_response, Response
 from slack import WebClient
 from slackeventsapi import SlackEventAdapter
 from scipy.sparse import lil_matrix
 
-# creawling.py의 함수 쓰기위해서 import
-import crawling
-from slacker import Slacker
+import json
+import re
+import requests
+from slack.web.classes import extract_json
+from slack.web.classes.blocks import *
+from slack.web.classes.elements import *
+from slack.web.classes.interactions import MessageInteractiveEvent
 
 # slack 연동 정보 입력 부분
-SLACK_TOKEN = "xoxb-724397827219-739240775904-5fQc8gC6RkZRx0MTFu2ol2Ia"
-SLACK_SIGNING_SECRET = "f8cdb41515e9fa9fafdcf64c57ac3850"
-
-# 챗봇 응답 메세지 띄우기위함
-slacktest = Slacker(SLACK_TOKEN)
+SLACK_TOKEN = "xoxb-720220358483-738701955364-q3tCkTnPKzSFEQbW2a8vnrWm"
+SLACK_SIGNING_SECRET = "61d52b36a564138f59046147325dcfe4"
 
 app = Flask(__name__)
 
@@ -33,6 +35,9 @@ pickle_obj = open('model.clf', 'rb')
 clf = pickle.load(pickle_obj)
 clf2 = pickle.load(pickle_obj)
 word_indices = pickle.load(pickle_obj)
+neg = 0
+pos = 0
+msg = ""
 
 # Req 2-2-2. 토큰화 및 one-hot 임베딩하는 전 처리
 pos_tagger = Okt()
@@ -55,6 +60,11 @@ def preprocess(doc):
 
     return text_docs
 
+
+def predict(test_doc, test_clf):
+    predict_result = test_clf.predict(test_doc)[0]
+    return predict_result
+
 # # Req 2-2-3. 긍정 혹은 부정으로 분류
 
 
@@ -69,26 +79,7 @@ def classify(test_doc, test_clf):
         pos += 1
         return "positive"
 
-
-# print(classify(preprocess("이 영화 노잼"), clf))
-
-
 # # Req 2-2-4. app.db 를 연동하여 웹에서 주고받는 데이터를 DB로 저장
-
-
-# 챗봇이 멘션을 받았을 경우
-@slack_events_adaptor.on("app_mention")
-def app_mentioned(event_data):
-    channel = event_data["event"]["channel"]
-    text = event_data["event"]["text"]
-
-    # # DB에 데이터 저장
-    # save_text_to_db(text)
-    # # 메세지 보내기
-    send_message(text, channel)
-
-    # search_mv = text.split("> ")[1]
-    # slack_response_movieLink(search_mv)
 
 
 def save_text_to_db(text):
@@ -97,10 +88,32 @@ def save_text_to_db(text):
     cur = con.cursor()
 
     msg = text.split("> ")[1]
-    # print(msg)
     cur.execute('INSERT INTO search_history(query) VALUES(?)', (msg,))
     con.commit()
     cur.close()
+
+# 결과값이 틀린 경우 데이터를 DB에 저장
+
+
+def add_data(message):
+    chk = True
+    # db저장 구현
+
+    return chk
+
+# 추가 데이터 트레이닝
+
+
+def data_training():
+    chk = True
+    # DB에 저장된 데이터 개수 확인
+    # DB에 데이터가 10개 미만일 경우 chk -> false
+
+    # DB에 데이터가 10개 이상일 경우 chk -> true
+    # 추가 데이터 트레이닝
+    # DB 데이터 삭제
+
+    return chk
 
 
 def send_message(text, ch):
@@ -126,6 +139,7 @@ def send_message(text, ch):
         "title": "RESULT",
         'pretext': text.split("> ")[1],
         "fallback": "Status Monitor",
+        "callback_id": "button_event",
         "text": result,
         "fields": [
             {
@@ -148,45 +162,59 @@ def send_message(text, ch):
                 "text": "EDIT",
                 "type": "button",
                 "value": "edit",
-                "style": "good"
+                "style": "danger"
             },
             {
                 "name": "trainig",
                 "text": "TRAINING",
                 "type": "button",
                 "value": "training",
-                "style": "good"
-            },
-            {
-                "name": "close",
-                "text": "CLOSE",
-                "type": "button",
-                "value": "close",
                 "style": "danger"
             }
         ],
     }
-    slack_web_client.chat_postMessage(channel=ch, text=None, attachments=[
-                                      attachement],  as_user=False)
+    slack_web_client.chat_postMessage(
+        channel=ch,
+        text=None,
+        attachments=[attachement],
+        as_user=False)
 
 
-def slack_response_movieLink(search_mv):  # 영화를 입력했을때 관련 페이지로 이동하는 링크 제공
+@app.route("/click", methods=["GET", "POST"])
+def on_button_click():
+    payload = request.values["payload"]
+    clicked = json.loads(payload)["actions"][0]['value']
+    my_ch = json.loads(payload)["channel"]["id"]
 
-    print(search_mv)
-    link_address = crawling.get_movie_links_bySearch(search_mv)
+    if clicked == "edit":
+        print("edit")
+        add_data(msg)
+    elif clicked == "training":
+        print("train")
+        if data_training():
+            print("Success Training")
+        else:
+            print("Save more Data")
 
-    attachments_dict = dict()
-    attachments_dict['pretext'] = "여기에서 결과를 띄울꺼에요"
-    attachments_dict['title'] = "'"+search_mv+"'" + " 에 대한 영화 정보입니다"
-    attachments_dict['title_link'] = link_address
-    attachments_dict['fallback'] = "클라이언트에서 노티피케이션에 보이는 텍스트 입니다. attachment 블록에는 나타나지 않습니다"
-    attachments_dict['text'] = "본문 텍스트! 5줄이 넘어가면 *show more*로 보이게 됩니다."
-    # 마크다운을 적용시킬 인자들을 선택합니다.
-    attachments_dict['mrkdwn_in'] = ["text", "pretext"]
-    attachments = [attachments_dict]
+    slack_web_client.chat_postMessage(
+        channel=my_ch,
+        # channel = test,
+        text=clicked
+        # blocks=extract_json(message_blocks)
+    )
+    return make_response("", 200)
 
-    slacktest.chat.post_message(channel="#general", text=None,
-                                attachments=attachments, as_user=True)
+# 챗봇이 멘션을 받았을 경우
+@slack_events_adaptor.on("app_mention")
+def app_mentioned(event_data):
+    global msg
+    channel = event_data["event"]["channel"]
+    text = event_data["event"]["text"]
+    msg = text.split("> ")[1]
+    # DB에 데이터 저장
+    save_text_to_db(text)
+    # 메세지 보내기
+    send_message(text, channel)
 
 
 @app.route("/", methods=["GET"])
