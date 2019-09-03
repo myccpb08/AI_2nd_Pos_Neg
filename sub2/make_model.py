@@ -142,14 +142,18 @@ clf  <- Naive baysian mdoel
 clf2 <- Logistic regresion model
 """
 # Req 1-2-1. Naive baysian mdoel 학습
-NB = MultinomialNB().fit(X, Y)
+NB = MultinomialNB()
+NB.fit(X, Y)
 
 # # Req 1-2-2. Logistic regresion mdoel 학습
 LR = linear_model.SGDClassifier(loss='log', max_iter=2000, tol=1e-3, shuffle=False)
-
+LR.fit(X, Y)
+# SVM 학습
+SVM = linear_model.SGDClassifier(loss='hinge', max_iter=2000, tol=1e-3, shuffle=False)
+SVM.fit(X, Y)
 print("Naive bayesian classifier accuracy: {:.3f}".format(NB.score(X_test, Y_test)))
-print("Logistic regression accuracy: {:3f}".format(LR.score(X_test, Y_test)))
-
+print("Logistic regression accuracy: {:.3f}".format(LR.score(X_test, Y_test)))
+print("Logistic regression accuracy: {:.3f}".format(SVM.score(X_test, Y_test)))
 # Decision Tree
 # clf3 <- Decision Tree
 tree = DecisionTreeClassifier(max_depth=X.shape[0], random_state = 0)
@@ -166,8 +170,6 @@ print("랜덤포레스트")
 print("훈련 세트 정확도: {:3f}".format(forest.score(X, Y)))
 print("훈련 세트 정확도: {:3f}".format(forest.score(X_test, Y_test)))
 
-
-
 """
 데이터 저장 파트
 """
@@ -176,6 +178,7 @@ print("훈련 세트 정확도: {:3f}".format(forest.score(X_test, Y_test)))
 fl = open('model.clf', 'wb')
 pickle.dump(NB, fl)
 pickle.dump(LR, fl)
+pickle.dump(SVM, fl)
 pickle.dump(word_indices, fl)
 pickle.dump(tree, fl)
 pickle.dump(forest, fl)

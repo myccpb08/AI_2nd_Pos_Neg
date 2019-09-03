@@ -47,7 +47,7 @@ def tokenize(doc):
 """
 
 # train, test 데이터 읽기
-train_data = read_data('ratings_train_test.txt')
+train_data = read_data('naver_reple.txt')
 test_data = read_data('ratings_test_test.txt')
 
 print("1. ___Data preprocessing complete____")
@@ -64,16 +64,19 @@ test_docs = tokenize(test_data)
 print("2. ___Data Tokenization complete____")
 
 # Req 1-1-3. word_indices 초기화
+pickle_obj = open('model3.clf', 'rb')
+clf = pickle.load(pickle_obj)
+word_indices = pickle.load(pickle_obj)
 
-word_indices = {}
+# word_indices = {}
 # Req 1-1-3. word_indices 채우기
-idx = 0
-for part in train_docs:
-    for k in part:
-        meaning = k.split('/')[0]
-        if word_indices.get(meaning)==None:
-            word_indices[meaning]=idx
-            idx+=1
+# idx = 0
+# for part in train_docs:
+#     for k in part:
+#         meaning = k.split('/')[0]
+#         if word_indices.get(meaning)==None:
+#             word_indices[meaning]=idx
+#             idx+=1
 
 print("3. ___Word Indice Complete____")
 #print(word_indices)
@@ -102,7 +105,8 @@ for idx in range(len(train_docs)):
     temp = [0]*len(word_indices)
     for verb in train_docs[idx]:
         part = verb.split('/')[0]
-        temp[word_indices[part]]=1
+        if word_indices.get(part)!=None:
+            temp[word_indices[part]]=1
     X[idx]=temp
 print("6. ___X one-hot embedding Complete____")
 for idx in range(len(test_docs)):
@@ -134,25 +138,29 @@ print("8. ___Y, Y_test processing Complete____")
 # clf.fit(X, Y)
 # print(clf.score(X_test, Y_test))
 
-NB = MultinomialNB()
-NB.fit(X, Y)
-print(NB.score(X_test, Y_test))
-pickle_obj = open('model3.clf', 'rb')
-clf = pickle.load(pickle_obj)
 print(clf.score(X_test, Y_test))
-clf.partial_fit(X[100:], Y[100:])
+clf.partial_fit(X, Y)
 print(clf.score(X_test, Y_test))
+# NB = MultinomialNB()
+# NB.fit(X, Y)
+# print(NB.score(X_test, Y_test))
 
-print('logistic')
-clf1 = linear_model.SGDClassifier(loss='log', max_iter=1000, tol=1e-3, shuffle=False)
-clf1.fit(X, Y)
-print(clf1.score(X_test, Y_test)) 
 
-clf2 = linear_model.SGDClassifier(loss='log', max_iter=1000, tol=1e-3, shuffle=False)
-clf2.fit(X[:100], Y[:100])
-print(clf2.score(X_test, Y_test))
-clf2.partial_fit(X[100:], Y[100:])
-print(clf2.score(X_test, Y_test))
+
+# print(clf.score(X_test, Y_test))
+# clf.partial_fit(X[100:], Y[100:])
+# print(clf.score(X_test, Y_test))
+
+# print('logistic')
+# clf1 = linear_model.SGDClassifier(loss='log', max_iter=1000, tol=1e-3, shuffle=False)
+# clf1.fit(X, Y)
+# print(clf1.score(X_test, Y_test)) 
+
+# clf2 = linear_model.SGDClassifier(loss='log', max_iter=1000, tol=1e-3, shuffle=False)
+# clf2.fit(X[:100], Y[:100])
+# print(clf2.score(X_test, Y_test))
+# clf2.partial_fit(X[100:], Y[100:])
+# print(clf2.score(X_test, Y_test))
 
 # print("logistic")
 # clf2 = LogisticRegression(solver='lbfgs')

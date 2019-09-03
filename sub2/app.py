@@ -5,19 +5,24 @@ import numpy as np
 import time
 import json
 
+
 from konlpy.tag import Okt
 from flask import Flask, request, make_response, Response
 from slack import WebClient
 from slackeventsapi import SlackEventAdapter
 from scipy.sparse import lil_matrix
 
-import json
-import re
 import requests
 from slack.web.classes import extract_json
 from slack.web.classes.blocks import *
 from slack.web.classes.elements import *
 from slack.web.classes.interactions import MessageInteractiveEvent
+
+from scipy.sparse import lil_matrix
+from retrain import read_data, tokenize
+from sklearn.naive_bayes import MultinomialNB
+from sklearn import linear_model
+
 
 # slack 연동 정보 입력 부분
 SLACK_TOKEN = "xoxb-731614402629-733495701111-6QglObMVmrUpPNSJz4bob0Vo"
@@ -31,9 +36,13 @@ slack_web_client = WebClient(token=SLACK_TOKEN)
 # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
 pickle_obj = open('model.clf', 'rb')
 
-clf = pickle.load(pickle_obj)
-clf2 = pickle.load(pickle_obj)
+clf = pickle.load(pickle_obj) # naive bayes
+clf2 = pickle.load(pickle_obj) # Logistic Regression
+clf3 = pickle.load(pickle_obj) # SVM
 word_indices = pickle.load(pickle_obj)
+clf4 = pickle.load(pickle_obj) # 의사결정트리
+clf5 = pickle.load(pickle_obj) # 랜덤포레스트
+
 neg = 0
 pos = 0
 msg = ""
@@ -55,6 +64,7 @@ def preprocess(doc):
             if word_indices.get(part)!=None:
                 temp[word_indices[part]]=1
         text_docs[idx]=temp
+
     return text_docs
 
 
@@ -73,38 +83,6 @@ def classify(test_doc, test_clf):
     else:
         pos += 1
         return "positive"
-    
-# # Req 2-2-4. app.db 를 연동하여 웹에서 주고받는 데이터를 DB로 저장
-
-
-# 챗봇이 멘션을 받았을 경우
-@slack_events_adaptor.on("app_mention")
-def app_mentioned(event_data):
-    channel = event_data["event"]["channel"]
-    text = event_data["event"]["text"]
-    pprint.pprint(event_data)
-    # DB에 데이터 저장
-    # save_text_to_db(text)
-    # 메세지 보내기
-    send_message(text, channel)
-
-# @slack_events_adaptor.on("reaction_added")
-# def reaction_added(event_data):
-#   emoji = event_data["event"]["reaction"]
-#   print(emoji)
-@app.route("/click", methods=["POST"])
-def message_options():
-    form_json = json.loads(request.form["payload"])
-    ch = form_json["channel"]["id"]
-    pprint.pprint(form_json)
-    keyword = form_json["actions"][0]["value"]
-    #selected_option = form_json['actions'][0]["selected_option"]["text"]["text"]
-    slack_web_client.chat_postMessage(
-        channel=ch,
-        text=keyword,
-    )
-    return make_response("", 200)
-
 
 # # Req 2-2-4. app.db 를 연동하여 웹에서 주고받는 데이터를 DB로 저장
 def save_text_to_db(text):
@@ -134,7 +112,29 @@ def data_training():
     # DB에 데이터가 10개 이상일 경우 chk -> true
     # 추가 데이터 트레이닝
     # DB 데이터 삭제
+    """
+    train_data = read_date()
+    train_docs = tokenize(train_data)
+
+    X = lil_matrix((len(train_docs), len(word_indices)))
+    Y = np.zeros(len(train_docs))
+
+    for idx in range(len(train_docs)):
+        temp = [0]*len(word_indices)
+        for verb in train_docs[idx]:
+            part = verb.split('/')[0]
+            if word_indices.get(part)!=None:
+                temp[word_indices[part]]=1
+        X[idx]=temp
+
+    for idx in range(len(train_data)):
+        part = train_data[idx][2].split('\n')[0]
+        Y[idx]=part
     
+    clf.partial_fit(X, Y) # naive Bayes
+    clf2.partial_fit(X, Y) # Logistic
+    clf3.partial_fit(X, Y) # SVM
+    """
     return chk
 
 def send_message(text, ch):
@@ -161,11 +161,6 @@ def send_message(text, ch):
             'pretext': text.split("> ")[1],
             "fallback": "Status Monitor",
             "callback_id": "button_event",
-            "text": keyword,
-            "fields":[
-                {
-                    "title": "Naive baysian model",
-                    "value": "predict_NB",
             "text": result,
             "fields":[
                 {
@@ -175,7 +170,6 @@ def send_message(text, ch):
                 },
                 {
                     "title": "Logistic regresion model",
-                    "value": "predict_LR",
                     "value": predict_LR,
                     "short": True
                 },
@@ -189,7 +183,6 @@ def send_message(text, ch):
                     "text": "EDIT",
                     "type": "button",
                     "value": "edit",
-                    "style": "good"
                     "style": "danger"
                 },
                 {
@@ -197,43 +190,10 @@ def send_message(text, ch):
                     "text": "TRAINING",
                     "type": "button",
                     "value": "training",
-                    "style": "good"
-                },
-                {
-                    "name": "close",
-                    "text": "CLOSE",
-                    "type": "button",
-                    "value": "close",
                     "style": "danger"
                 }
             ],
         }
-
-    print('시작')
-    slack_web_client.chat_postMessage(
-        channel=ch,
-        text=keyword,
-        attachments=[attachement],
-        blocks = [
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "You can add a button alongside text in your message. "
-            },
-            "accessory": {
-                "type": "button",
-                "text": {
-                    "type": "plain_text",
-                    "text": "Button",
-                    "emoji": True
-                },
-                "value": "click_me_123"
-            }
-        }
-        ]
-    )
-    print('끝')
     slack_web_client.chat_postMessage(
         channel=ch, 
         text=None,
