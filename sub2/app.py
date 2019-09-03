@@ -20,8 +20,8 @@ from slack.web.classes.elements import *
 from slack.web.classes.interactions import MessageInteractiveEvent
 
 # slack 연동 정보 입력 부분
-SLACK_TOKEN = "xoxb-720220358483-738701955364-q3tCkTnPKzSFEQbW2a8vnrWm"
-SLACK_SIGNING_SECRET = "61d52b36a564138f59046147325dcfe4"
+SLACK_TOKEN = "xoxb-724397827219-739240775904-5fQc8gC6RkZRx0MTFu2ol2Ia"
+SLACK_SIGNING_SECRET = "f8cdb41515e9fa9fafdcf64c57ac3850"
 
 app = Flask(__name__)
 
@@ -38,6 +38,7 @@ word_indices = pickle.load(pickle_obj)
 neg = 0
 pos = 0
 msg = ""
+output = -1
 
 # Req 2-2-2. 토큰화 및 one-hot 임베딩하는 전 처리
 pos_tagger = Okt()
@@ -84,20 +85,48 @@ def classify(test_doc, test_clf):
 
 def save_text_to_db(text):
     # db에 저장
+    global output
+
     con = sqlite3.connect('./app.db')
     cur = con.cursor()
 
     msg = text.split("> ")[1]
-    cur.execute('INSERT INTO search_history(query) VALUES(?)', (msg,))
+    cur.execute(
+        'INSERT INTO search_history(question, answer) VALUES(?,?)', (msg, output,))
     con.commit()
+    output = -1
     cur.close()
 
+
 # 결과값이 틀린 경우 데이터를 DB에 저장
+def edit_data():
+    chk = False
+    con = sqlite3.connect('./app.db')
+    cur = con.cursor()
 
+    recent = cur.execute(
+        'SELECT max(id), answer FROM search_history')
+    idx = 0
+    answer = -1
+    for row in recent:
+        # print(row)
+        idx = row[0]
+        answer = row[1]
 
-def add_data(message):
-    chk = True
-    # db저장 구현
+    print(idx)
+    # idx = int(idx)
+    print(answer)
+
+    if(answer == 0):
+        cur.execute('UPDATE search_history SET answer = 1 WHERE id = %s' % idx)
+        print("1로 수정완료")
+        chk = True
+    elif(answer == 1):
+        cur.execute('UPDATE search_history SET answer = 0 WHERE id = %s ' % idx)
+        print("0으로 수정완료")
+        chk = True
+    else:
+        print("errer")
 
     return chk
 
@@ -118,6 +147,7 @@ def data_training():
 
 def send_message(text, ch):
     global neg, pos
+    global output
 
     test_doc = preprocess(text.split("> ")[1])
     predict_NB = classify(test_doc, clf)
@@ -126,9 +156,11 @@ def send_message(text, ch):
     if neg > pos:
         result = "negative"
         img = "https://i.pinimg.com/originals/2c/21/8f/2c218fa1247ce35d20cb618e9f3049d4.gif"
+        output = 0
     else:
         result = "positive"
         img = "https://img1.daumcdn.net/thumb/R800x0/?scode=mtistory2&fname=https%3A%2F%2Ft1.daumcdn.net%2Fcfile%2Ftistory%2F99A4654C5C63B09028"
+        output = 1
 
     neg = 0
     pos = 0
@@ -188,7 +220,7 @@ def on_button_click():
 
     if clicked == "edit":
         print("edit")
-        add_data(msg)
+        edit_data()
     elif clicked == "training":
         print("train")
         if data_training():
@@ -211,10 +243,11 @@ def app_mentioned(event_data):
     channel = event_data["event"]["channel"]
     text = event_data["event"]["text"]
     msg = text.split("> ")[1]
-    # DB에 데이터 저장
-    save_text_to_db(text)
+
     # 메세지 보내기
     send_message(text, channel)
+    # DB에 데이터 저장
+    save_text_to_db(text)
 
 
 @app.route("/", methods=["GET"])
