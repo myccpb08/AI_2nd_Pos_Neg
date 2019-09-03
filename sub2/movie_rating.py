@@ -49,7 +49,7 @@ def tokenize(doc):
 """
 
 # train, test 데이터 읽기
-train_data = read_data('ratings_train.txt')
+train_data = read_data('ratings_train_test.txt')
 test_data = read_data('ratings_test.txt')
 print("1. ___Data preprocessing complete____")
 
