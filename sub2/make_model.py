@@ -6,7 +6,12 @@ from scipy.sparse import lil_matrix
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn import linear_model
+
+import json
+import os
 
 pos_tagger = Okt()
 # print(pos_tagger.nouns('한국어 분석을 시작합니다'))
@@ -47,8 +52,8 @@ def tokenize(doc):
 """
 
 # train, test 데이터 읽기
-train_data = read_data('ratings_train_test.txt')
-test_data = read_data('ratings_test_test.txt')
+train_data = read_data('ratings_train.txt')
+test_data = read_data('ratings_test.txt')
 
 print("1. ___Data preprocessing complete____")
 
@@ -56,10 +61,18 @@ print("1. ___Data preprocessing complete____")
 # train_docs, test_docs : 토큰화된 트레이닝, 테스트  문장에 label 정보를 추가한 list
 # 태깅 후 json 파일로 저장
 # 태깅이 완료된 json 파일이 존재하면 토큰화를 반복하지 않음
-
-train_docs = tokenize(train_data)
-test_docs = tokenize(test_data)
-    
+if os.path.isfile('train_do.json'):
+    with open('train_docs.json', 'r', encoding="utf-8") as f:
+        train_docs = json.load(f)
+    with open('test_docs.json', 'r', encoding="utf-8") as f:
+        test_docs = json.load(f)
+else:
+    train_docs = tokenize(train_data)
+    test_docs = tokenize(test_data)
+    with open('train_docs.json', 'w', encoding="utf-8") as make_file:
+        json.dump(train_docs, make_file, ensure_ascii=False, indent="\t")
+    with open('test_docs.json', 'w', encoding="utf-8") as make_file:
+        json.dump(test_docs, make_file, ensure_ascii=False, indent="\t")
 
 print("2. ___Data Tokenization complete____")
 
@@ -123,44 +136,47 @@ for idx in range(len(test_data)):
 print("8. ___Y, Y_test processing Complete____")
 # print(Y)
 
-# NB = MultinomialNB()
-# NB.fit(X[:100], Y[:100])
-# fl = open('model3.clf', 'wb')
-# pickle.dump(NB, fl)
-# fl.close()
-# # NB.partial_fit(X[100:], Y[100:])
-# print(NB.score(X_test, Y_test))
-# clf = MultinomialNB()
-# clf.fit(X, Y)
-# print(clf.score(X_test, Y_test))
+"""
+트레이닝 파트
+clf  <- Naive baysian mdoel
+clf2 <- Logistic regresion model
+"""
+# Req 1-2-1. Naive baysian mdoel 학습
+NB = MultinomialNB().fit(X, Y)
 
-NB = MultinomialNB()
-NB.fit(X, Y)
-print(NB.score(X_test, Y_test))
-pickle_obj = open('model3.clf', 'rb')
-clf = pickle.load(pickle_obj)
-print(clf.score(X_test, Y_test))
-clf.partial_fit(X[100:], Y[100:])
-print(clf.score(X_test, Y_test))
+# # Req 1-2-2. Logistic regresion mdoel 학습
+LR = linear_model.SGDClassifier(loss='log', max_iter=2000, tol=1e-3, shuffle=False)
 
-print('logistic')
-clf1 = linear_model.SGDClassifier(loss='log', max_iter=1000, tol=1e-3, shuffle=False)
-clf1.fit(X, Y)
-print(clf1.score(X_test, Y_test)) 
+print("Naive bayesian classifier accuracy: {:.3f}".format(NB.score(X_test, Y_test)))
+print("Logistic regression accuracy: {:3f}".format(LR.score(X_test, Y_test)))
 
-clf2 = linear_model.SGDClassifier(loss='log', max_iter=1000, tol=1e-3, shuffle=False)
-clf2.fit(X[:100], Y[:100])
-print(clf2.score(X_test, Y_test))
-clf2.partial_fit(X[100:], Y[100:])
-print(clf2.score(X_test, Y_test))
+# Decision Tree
+# clf3 <- Decision Tree
+tree = DecisionTreeClassifier(max_depth=X.shape[0], random_state = 0)
+tree.fit(X, Y)
+print("의사결정트리")
+print("훈련 세트 정확도: {:.3f}".format(tree.score(X, Y)))
+print("훈련 세트 정확도: {:.3f}".format(tree.score(X_test, Y_test)))
 
-# print("logistic")
-# clf2 = LogisticRegression(solver='lbfgs')
-# clf2.fit(X, Y)
-# print(clf2.score(X_test, Y_test))
+# RandomForest
+# clf4 <= RandomForest
+forest = RandomForestClassifier(n_estimators= 1000, random_state=2)
+forest.fit(X, Y)
+print("랜덤포레스트")
+print("훈련 세트 정확도: {:3f}".format(forest.score(X, Y)))
+print("훈련 세트 정확도: {:3f}".format(forest.score(X_test, Y_test)))
 
-# clfs = LogisticRegression(solver='lbfgs', warm_start = True)
-# clfs.fit(X[:100], Y[:100])
-# print(clfs.score(X_test, Y_test))
-# clfs.fit(X[100:], Y[100:])
-# print(clfs.score(X_test, Y_test))
+
+
+"""
+데이터 저장 파트
+"""
+
+# Req 1-4. pickle로 학습된 모델 데이터 저장
+fl = open('model.clf', 'wb')
+pickle.dump(NB, fl)
+pickle.dump(LR, fl)
+pickle.dump(word_indices, fl)
+pickle.dump(tree, fl)
+pickle.dump(forest, fl)
+fl.close
