@@ -24,8 +24,8 @@ from sklearn import linear_model
 
 
 # slack 연동 정보 입력 부분
-SLACK_TOKEN = "xoxb-731614402629-733495701111-6QglObMVmrUpPNSJz4bob0Vo"
-SLACK_SIGNING_SECRET = "33d0b00dfeb6ab2a156b78392ccb01b1"
+SLACK_TOKEN = "xoxb-720220358483-738701955364-q3tCkTnPKzSFEQbW2a8vnrWm"
+SLACK_SIGNING_SECRET = "61d52b36a564138f59046147325dcfe4"
 
 app = Flask(__name__)
 
@@ -35,11 +35,11 @@ slack_web_client = WebClient(token=SLACK_TOKEN)
 
 # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
 pickle_obj = open('model.clf', 'rb')
-clf = pickle.load(pickle_obj)  # naive bayes
-clf2 = pickle.load(pickle_obj)  # Logistic Regression
-clf3 = pickle.load(pickle_obj)  # SVM
+clf = pickle.load(pickle_obj) # naive bayes
+clf2 = pickle.load(pickle_obj) # Logistic Regression
+clf3 = pickle.load(pickle_obj) # SVM
+clf4 = pickle.load(pickle_obj) # 의사결정트리
 word_indices = pickle.load(pickle_obj)
-clf4 = pickle.load(pickle_obj)  # 의사결정트리
 
 neg = 0
 pos = 0
@@ -238,6 +238,8 @@ def send_message(text, ch):
     test_doc = preprocess(text.split("> ")[1])
     predict_NB = classify(test_doc, clf)
     predict_LR = classify(test_doc, clf2)
+    predict_SVM = classify(test_doc, clf3)
+    predict_DTC = classify(test_doc, clf4)
 
     if neg > pos:
         result = "negative"
@@ -252,45 +254,52 @@ def send_message(text, ch):
     pos = 0
 
     attachement = {
-        "color": "#fe6f5e",
-        "image_url": img,
-        "title": "RESULT",
-        'pretext': text.split("> ")[1],
-        "fallback": "Status Monitor",
-        "callback_id": "button_event",
-        "text": result,
-        "fields": [
-            {
-                    "title": "Naive baysian model",
+            "color": "#fe6f5e",
+            "image_url": img,
+            "title": "RESULT",
+            'pretext': text.split("> ")[1],
+            "fallback": "Status Monitor",
+            "callback_id": "button_event",
+            "text": result,
+            "fields":[
+                {
+                    "title": "Naive Baysian model",
                     "value": predict_NB,
                     "short": True
-            },
-            {
-                "title": "Logistic regresion model",
-                "value": predict_LR,
-                "short": True
-            },
-            {
-
-            }
-        ],
-        "actions": [
-            {
-                "name": "edit",
-                "text": "EDIT",
-                "type": "button",
-                "value": "edit",
-                "style": "danger"
-            },
-            {
-                "name": "trainig",
-                "text": "TRAINING",
-                "type": "button",
-                "value": "training",
-                "style": "danger"
-            }
-        ],
-    }
+                },
+                {
+                    "title": "Logistic Regresion model",
+                    "value": predict_LR,
+                    "short": True
+                },
+                {
+                    "title": "Support Vector Machine model",
+                    "value": predict_SVM,
+                    "short": True
+                },
+                {
+                    "title": "Decision Tree Classifier model",
+                    "value": predict_DTC,
+                    "short": True
+                }
+            ],
+            "actions": [
+                {
+                    "name": "edit",
+                    "text": "EDIT",
+                    "type": "button",
+                    "value": "edit",
+                    "style": "danger"
+                },
+                {
+                    "name": "trainig",
+                    "text": "TRAINING",
+                    "type": "button",
+                    "value": "training",
+                    "style": "danger"
+                }
+            ],
+        }
     slack_web_client.chat_postMessage(
         channel=ch,
         text=None,
@@ -326,13 +335,19 @@ def on_button_click():
 @slack_events_adaptor.on("app_mention")
 def app_mentioned(event_data):
     global msg
-    channel = event_data["event"]["channel"]
-    text = event_data["event"]["text"]
-    # 메세지 보내기
-    send_message(text, channel)
-    # DB에 데이터 저장
-    save_text_to_db(text)
-
+    retry_reason = request.headers.get("x-slack-retry-reason")
+    retry_count = request.headers.get("x-slack-retry-num")
+    if retry_count:
+        return make_response('No', 200, {"X-Slack-No-Retry": 1})
+    else:
+        channel = event_data["event"]["channel"]
+        text = event_data["event"]["text"]
+        # DB에 데이터 저장
+        # 메세지 보내기
+        send_message(text, channel)
+        save_text_to_db(text)
+    make_response('No', 200, {"X-Slack-No-Retry": 1})
+    
 
 @app.route("/", methods=["GET"])
 def index():
