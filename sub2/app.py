@@ -24,8 +24,8 @@ from sklearn import linear_model
 
 
 # slack 연동 정보 입력 부분
-SLACK_TOKEN = "xoxb-720220358483-738701955364-q3tCkTnPKzSFEQbW2a8vnrWm"
-SLACK_SIGNING_SECRET = "61d52b36a564138f59046147325dcfe4"
+SLACK_TOKEN = "xoxb-724397827219-739240775904-5fQc8gC6RkZRx0MTFu2ol2Ia"
+SLACK_SIGNING_SECRET = "f8cdb41515e9fa9fafdcf64c57ac3850"
 
 app = Flask(__name__)
 
@@ -193,43 +193,6 @@ def add_data(message):
     # db저장 구현
 
     return chk
-
-# 추가 데이터 트레이닝
-
-
-def data_training():
-    chk = True
-    # DB에 저장된 데이터 개수 확인
-    # DB에 데이터가 10개 미만일 경우 chk -> false
-
-    # DB에 데이터가 10개 이상일 경우 chk -> true
-    # 추가 데이터 트레이닝
-    # DB 데이터 삭제
-    """
-    train_data = read_date()
-    train_docs = tokenize(train_data)
-
-    X = lil_matrix((len(train_docs), len(word_indices)))
-    Y = np.zeros(len(train_docs))
-
-    for idx in range(len(train_docs)):
-        temp = [0]*len(word_indices)
-        for verb in train_docs[idx]:
-            part = verb.split('/')[0]
-            if word_indices.get(part)!=None:
-                temp[word_indices[part]]=1
-        X[idx]=temp
-
-    for idx in range(len(train_data)):
-        part = train_data[idx][2].split('\n')[0]
-        Y[idx]=part
-    
-    clf.partial_fit(X, Y) # naive Bayes
-    clf2.partial_fit(X, Y) # Logistic
-    clf3.partial_fit(X, Y) # SVM
-    """
-    return chk
-
 
 def send_message(text, ch):
     global neg, pos
