@@ -52,7 +52,7 @@ def tokenize(doc):
 """
 
 # train, test 데이터 읽기
-train_data = read_data('ratings_train.txt')
+train_data = read_data('ratings_train_test.txt')
 test_data = read_data('ratings_test.txt')
 
 print("1. ___Data preprocessing complete____")
@@ -166,9 +166,9 @@ fl = open('model.clf', 'wb')
 pickle.dump(NB, fl)
 pickle.dump(LR, fl)
 pickle.dump(SVM, fl)
-pickle.dump(word_indices, fl)
 pickle.dump(tree, fl)
-fl.close
+pickle.dump(word_indices, fl)
+fl.close()
 # RandomForest
 # clf4 <= RandomForest
 # forest = RandomForestClassifier(n_estimators= 1000, random_state=2)
