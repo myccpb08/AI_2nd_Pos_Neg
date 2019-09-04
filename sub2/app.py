@@ -232,10 +232,6 @@ def app_mentioned(event_data):
         return make_response('No', 200, {"X-Slack-No-Retry": 1})
     else:
         channel = event_data["event"]["channel"]
-        # slack_web_client.chat_postMessage(
-        #     channel=channel, 
-        #     text="기다려요"
-        # )
         text = event_data["event"]["text"]
         msg = text.split("> ")[1]
         # DB에 데이터 저장
