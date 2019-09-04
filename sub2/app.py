@@ -35,13 +35,11 @@ slack_web_client = WebClient(token=SLACK_TOKEN)
 
 # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
 pickle_obj = open('model.clf', 'rb')
-
 clf = pickle.load(pickle_obj) # naive bayes
 clf2 = pickle.load(pickle_obj) # Logistic Regression
 clf3 = pickle.load(pickle_obj) # SVM
 word_indices = pickle.load(pickle_obj)
 clf4 = pickle.load(pickle_obj) # 의사결정트리
-clf5 = pickle.load(pickle_obj) # 랜덤포레스트
 
 neg = 0
 pos = 0

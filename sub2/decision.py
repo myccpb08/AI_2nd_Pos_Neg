@@ -160,42 +160,29 @@ print("훈련 세트 정확도: {:3f}".format(forest.score(X_test, Y_test)))
 # Req 1-2-1. Naive baysian mdoel 학습
 clf = MultinomialNB().fit(X, Y)
 
-# # Req 1-2-2. Logistic regresion mdoel 학습
-clf2 = LogisticRegression(solver='lbfgs').fit(X,Y)
+# # # Req 1-2-2. Logistic regresion mdoel 학습
+# clf2 = LogisticRegression(solver='lbfgs').fit(X,Y)
 
+# y_pred_temp = []
+# y_pred_temp2 = []
+# for data in X_test:
+#     y_pred_temp.append(clf.predict(data)[0])
+#     y_pred_temp2.append(clf2.predict(data)[0])
+# y_pred_NB = np.array(y_pred_temp)
+# y_pred_LR = np.array(y_pred_temp2)
 
-# # """
-# # 테스트 파트
-# # """
-# # print(X_test[0])
-# # print(Y_test[0])
-# # # Req 1-3-1. 문장 데이터에 따른 예측된 분류값 출력
-# # print("Naive bayesian classifier example result: {}, {}".format(test_data[4][1], clf.predict(X_test[4])[0]))
-# # print("Logistic regression exampleresult: {}, {}".format(test_data[4][1], clf2.predict(X_test[4])[0]))
-# # # Req 1-3-2. 정확도 출력
-y_pred_temp = []
-y_pred_temp2 = []
-for data in X_test:
-    y_pred_temp.append(clf.predict(data)[0])
-    y_pred_temp2.append(clf2.predict(data)[0])
-y_pred_NB = np.array(y_pred_temp)
-y_pred_LR = np.array(y_pred_temp2)
-# print(y_pred_NB)
-# print(y_pred_LR)
-# print(Y_test)
-# print(accuracy_score(y_pred_NB, Y_test))
-print("Naive bayesian classifier accuracy: {}".format(accuracy_score(Y_test, y_pred_NB)))
-print("Logistic regression accuracy: {}".format(accuracy_score(Y_test, y_pred_LR)))
+# print("Naive bayesian classifier accuracy: {}".format(accuracy_score(Y_test, y_pred_NB)))
+# print("Logistic regression accuracy: {}".format(accuracy_score(Y_test, y_pred_LR)))
 
-"""
-데이터 저장 파트
-"""
+# """
+# 데이터 저장 파트
+# """
 
-# Req 1-4. pickle로 학습된 모델 데이터 저장
-fl = open('model.clf', 'wb')
-pickle.dump(clf, fl)
-pickle.dump(clf2, fl)
-pickle.dump(word_indices, fl)
-pickle.dump(tree, fl)
-pickle.dump(forest, fl)
-fl.close
+# # Req 1-4. pickle로 학습된 모델 데이터 저장
+# fl = open('model.clf', 'wb')
+# pickle.dump(clf, fl)
+# pickle.dump(clf2, fl)
+# pickle.dump(word_indices, fl)
+# pickle.dump(tree, fl)
+# pickle.dump(forest, fl)
+# fl.close

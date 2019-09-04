@@ -162,24 +162,26 @@ print("의사결정트리")
 print("훈련 세트 정확도: {:.3f}".format(tree.score(X, Y)))
 print("훈련 세트 정확도: {:.3f}".format(tree.score(X_test, Y_test)))
 
-# RandomForest
-# clf4 <= RandomForest
-forest = RandomForestClassifier(n_estimators= 1000, random_state=2)
-forest.fit(X, Y)
-print("랜덤포레스트")
-print("훈련 세트 정확도: {:3f}".format(forest.score(X, Y)))
-print("훈련 세트 정확도: {:3f}".format(forest.score(X_test, Y_test)))
-
-"""
-데이터 저장 파트
-"""
-
-# Req 1-4. pickle로 학습된 모델 데이터 저장
 fl = open('model.clf', 'wb')
 pickle.dump(NB, fl)
 pickle.dump(LR, fl)
 pickle.dump(SVM, fl)
 pickle.dump(word_indices, fl)
 pickle.dump(tree, fl)
-pickle.dump(forest, fl)
 fl.close
+# RandomForest
+# clf4 <= RandomForest
+# forest = RandomForestClassifier(n_estimators= 1000, random_state=2)
+# forest.fit(X, Y)
+# print("랜덤포레스트")
+# print("훈련 세트 정확도: {:3f}".format(forest.score(X, Y)))
+# print("훈련 세트 정확도: {:3f}".format(forest.score(X_test, Y_test)))
+
+# """
+# 데이터 저장 파트
+# """
+
+# # Req 1-4. pickle로 학습된 모델 데이터 저장
+# fl = open('model2.clf', 'wb')
+# pickle.dump(forest, fl)
+# fl.close
