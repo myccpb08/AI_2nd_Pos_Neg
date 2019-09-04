@@ -38,7 +38,9 @@ word_indices = pickle.load(pickle_obj)
 neg = 0
 pos = 0
 msg = ""
-output = -1
+
+output = -1  # 트레이닝결과값 0/1을 db에 쓰기위한 초기화 변수
+beforeTrainDataCnt = 0  # 까지 학습했다.를 저장하는 전역변수로 사용
 
 # Req 2-2-2. 토큰화 및 one-hot 임베딩하는 전 처리
 pos_tagger = Okt()
@@ -94,6 +96,7 @@ def save_text_to_db(text):
     cur.execute(
         'INSERT INTO search_history(question, answer) VALUES(?,?)', (msg, output,))
     con.commit()
+
     output = -1
     cur.close()
 
@@ -109,13 +112,8 @@ def edit_data():
     idx = 0
     answer = -1
     for row in recent:
-        # print(row)
         idx = row[0]
         answer = row[1]
-
-    print(idx)
-    # idx = int(idx)
-    print(answer)
 
     if(answer == 0):
         cur.execute('UPDATE search_history SET answer = 1 WHERE id = %s' % idx)
@@ -128,20 +126,58 @@ def edit_data():
     else:
         print("errer")
 
+    con.commit()
+    cur.close()
+
+    # db 업데이트 성공유무를 리턴
     return chk
 
+
 # 추가 데이터 트레이닝
-
-
 def data_training():
+    global beforeTrainDataCnt
     chk = True
+
+    con = sqlite3.connect('./app.db')
+    cur = con.cursor()
     # DB에 저장된 데이터 개수 확인
+    recent = cur.execute(
+        'SELECT max(id), answer FROM search_history')
+
+    cnt = 0
+    for row in recent:
+        cnt = row[0]
+
     # DB에 데이터가 10개 미만일 경우 chk -> false
+    if((cnt - beforeTrainDataCnt) < 10):
+        print("추가로 저장된 데이터가 10개 미만입니다")
+        chk = False
 
     # DB에 데이터가 10개 이상일 경우 chk -> true
+    else:
+        print("학습하겠습니다")
+        print(beforeTrainDataCnt+1, " 부터 학습합니다")
+
+        f = open('retrain.txt', mode='wt', encoding='utf-8')
+        readData = cur.execute(
+            'SELECT * FROM search_history WHERE id > %s ' % beforeTrainDataCnt
+        )
+        temp = ""
+        for data in readData:
+            row = str(data[1]) + "\t" + data[2] + "\t" + str(data[3]) + "\n"
+            temp += row
+
+        f.write(temp)
+        print("쓰기완료")
+        f.close()
+
+        beforeTrainDataCnt = cnt  # 현재 데이터까지 학습했음을 저장
+        print(beforeTrainDataCnt, " idx 까지 학습완료")
+        chk = True
+
+    cur.close()
     # 추가 데이터 트레이닝
     # DB 데이터 삭제
-
     return chk
 
 
@@ -242,7 +278,6 @@ def app_mentioned(event_data):
     global msg
     channel = event_data["event"]["channel"]
     text = event_data["event"]["text"]
-    msg = text.split("> ")[1]
 
     # 메세지 보내기
     send_message(text, channel)
