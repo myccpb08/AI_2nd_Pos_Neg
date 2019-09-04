@@ -24,8 +24,8 @@ from sklearn import linear_model
 
 
 # slack 연동 정보 입력 부분
-SLACK_TOKEN = "xoxb-724397827219-739240775904-5fQc8gC6RkZRx0MTFu2ol2Ia"
-SLACK_SIGNING_SECRET = "f8cdb41515e9fa9fafdcf64c57ac3850"
+SLACK_TOKEN = "xoxb-731614402629-733495701111-6QglObMVmrUpPNSJz4bob0Vo"
+SLACK_SIGNING_SECRET = "33d0b00dfeb6ab2a156b78392ccb01b1"
 
 app = Flask(__name__)
 
@@ -34,12 +34,13 @@ slack_events_adaptor = SlackEventAdapter(
 slack_web_client = WebClient(token=SLACK_TOKEN)
 
 # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
-pickle_obj = open('model.clf', 'rb')
+pickle_obj = open('origin_model.clf', 'rb')
 clf = pickle.load(pickle_obj) # naive bayes
 clf2 = pickle.load(pickle_obj) # Logistic Regression
 clf3 = pickle.load(pickle_obj) # SVM
 clf4 = pickle.load(pickle_obj) # 의사결정트리
 word_indices = pickle.load(pickle_obj)
+
 
 neg = 0
 pos = 0
@@ -69,6 +70,23 @@ def preprocess(doc):
 
     return text_docs
 
+def n_preprocess(doc, word_indices):
+    # 토큰화
+    text_docs = []
+    result = []
+    result = ['/'.join(t) for t in pos_tagger.pos(doc, norm=True, stem=True)]
+    text_docs += [result]
+    # one-hot 임베딩
+    for idx in range(len(text_docs)):
+        temp = [0]*len(word_indices)
+        for verb in text_docs[idx]:
+            part = verb.split('/')[0]
+            if word_indices.get(part) != None:
+                temp[word_indices[part]] = 1
+        text_docs[idx] = temp
+
+    return text_docs
+
 
 def predict(test_doc, test_clf):
     predict_result = test_clf.predict(test_doc)[0]
@@ -77,15 +95,30 @@ def predict(test_doc, test_clf):
 # # Req 2-2-3. 긍정 혹은 부정으로 분류
 
 
-def classify(test_doc, test_clf):
+def classify(test_doc, test_clf, model_name):
     global neg
     global pos
+    
     predict_result = predict(test_doc, test_clf)
     if predict_result == 0.0:
-        neg += 1
+        if model_name=="NB" or model_name=="DTC":
+            print(test_clf.predict_proba(test_doc))
+            neg += test_clf.predict_proba(test_doc)[0][0]
+            pos += test_clf.predict_proba(test_doc)[0][1]
+        else:
+            print(test_clf.decision_function(test_doc))
+            neg += 0.7
+            pos += 0.3
         return "negative"
     else:
-        pos += 1
+        if model_name=="NB" or model_name=="DTC":
+            print(test_clf.predict_proba(test_doc))
+            neg += test_clf.predict_proba(test_doc)[0][0]
+            pos += test_clf.predict_proba(test_doc)[0][1]
+        else:
+            print(test_clf.decision_function(test_doc))
+            pos += 0.7
+            neg += 0.3
         return "positive"
 
 # # Req 2-2-4. app.db 를 연동하여 웹에서 주고받는 데이터를 DB로 저장
@@ -142,7 +175,7 @@ def edit_data():
 # 추가 데이터 트레이닝
 def data_training():
     global beforeTrainDataCnt
-    global clf1, clf2, clf3
+    global clf1, clf2, clf3, clf4, word_indices
     chk = True
 
     con = sqlite3.connect('./app.db')
@@ -183,7 +216,7 @@ def data_training():
         chk = True
         
         # 추가 데이터 트레이닝
-        train_data = read_date('retrain.txt')
+        train_data = read_data('retrain.txt')
         train_docs = tokenize(train_data)
         print('read_data, tokenize')
 
@@ -210,7 +243,13 @@ def data_training():
         clf3.partial_fit(X, Y) # SVM
         print('SVM')
 
-
+        fl = open('origin_model.clf', 'wb')
+        pickle.dump(clf, fl)
+        pickle.dump(clf2, fl)
+        pickle.dump(clf3, fl)
+        pickle.dump(clf4, fl)
+        pickle.dump(word_indices, fl)
+        fl.close()
     cur.close()
    
     # DB 데이터 삭제
@@ -222,18 +261,18 @@ def send_message(text, ch):
     global output
 
     test_doc = preprocess(text.split("> ")[1])
-    predict_NB = classify(test_doc, clf)
-    predict_LR = classify(test_doc, clf2)
-    predict_SVM = classify(test_doc, clf3)
-    predict_DTC = classify(test_doc, clf4)
+    predict_NB = classify(test_doc, clf, "NB")
+    predict_LR = classify(test_doc, clf2, "LR")
+    predict_SVM = classify(test_doc, clf3, "SVM")
+    predict_DTC = classify(test_doc, clf4, "DTC")
 
     if neg > pos:
         result = "negative"
-        img = "https://i.pinimg.com/originals/2c/21/8f/2c218fa1247ce35d20cb618e9f3049d4.gif"
+        img = "https://imgur.com/L3ZrqYS.gif"
         output = 0
     else:
         result = "positive"
-        img = "https://img1.daumcdn.net/thumb/R800x0/?scode=mtistory2&fname=https%3A%2F%2Ft1.daumcdn.net%2Fcfile%2Ftistory%2F99A4654C5C63B09028"
+        img = "https://imgur.com/oLCYpsU.gif"
         output = 1
 
     neg = 0
@@ -283,6 +322,13 @@ def send_message(text, ch):
                     "type": "button",
                     "value": "training",
                     "style": "danger"
+                },
+                {
+                    "name": "naver",
+                    "text": "NAVER SHOW",
+                    "type": "button",
+                    "value": "naver",
+                    "style": "danger"
                 }
             ],
         }
@@ -291,6 +337,74 @@ def send_message(text, ch):
         text=None,
         attachments=[attachement],
         as_user=False)
+
+def send_naver_message(ch):
+    global neg, pos
+    global output
+    global msg
+
+    pickle_obj = open('model3.clf', 'rb')
+    n_clf = pickle.load(pickle_obj) # naive bayes
+    n_clf2 = pickle.load(pickle_obj) # Logistic Regression
+    n_clf3 = pickle.load(pickle_obj) # SVM
+    n_clf4 = pickle.load(pickle_obj) # 의사결정트리
+    n_word_indices = pickle.load(pickle_obj)
+    print("model create")
+    print(msg)
+    test_doc = n_preprocess(msg.split("> ")[1], n_word_indices)
+    predict_NB = classify(test_doc, n_clf, "NB")
+    predict_LR = classify(test_doc, n_clf2, "LR")
+    predict_SVM = classify(test_doc, n_clf3, "SVM")
+    predict_DTC = classify(test_doc, n_clf4, "DTC")
+    print('predict')
+    if neg > pos:
+        result = "negative"
+        img = "https://i.pinimg.com/originals/2c/21/8f/2c218fa1247ce35d20cb618e9f3049d4.gif"
+        output = 0
+    else:
+        result = "positive"
+        img = "https://img1.daumcdn.net/thumb/R800x0/?scode=mtistory2&fname=https%3A%2F%2Ft1.daumcdn.net%2Fcfile%2Ftistory%2F99A4654C5C63B09028"
+        output = 1
+
+    neg = 0
+    pos = 0
+
+    attachement = {
+            "color": "#fe6f5e",
+            "title": "NAVER RESULT",
+            'pretext': msg.split("> ")[1],
+            "fallback": "Status Monitor",
+            "callback_id": "button_event",
+            "text": result,
+            "fields":[
+                {
+                    "title": "Naive Baysian model",
+                    "value": predict_NB,
+                    "short": True
+                },
+                {
+                    "title": "Logistic Regresion model",
+                    "value": predict_LR,
+                    "short": True
+                },
+                {
+                    "title": "Support Vector Machine model",
+                    "value": predict_SVM,
+                    "short": True
+                },
+                {
+                    "title": "Decision Tree Classifier model",
+                    "value": predict_DTC,
+                    "short": True
+                }
+            ],
+        }
+    slack_web_client.chat_postMessage(
+        channel=ch,
+        text=None,
+        attachments=[attachement],
+        as_user=False)
+
 
 
 @app.route("/click", methods=["GET", "POST"])
@@ -308,6 +422,11 @@ def on_button_click():
             print("Success Training")
         else:
             print("Save more Data")
+    else:
+        print("naver start")
+        send_naver_message(my_ch)
+        print("sending naver")
+        return make_response("", 200)
 
     slack_web_client.chat_postMessage(
         channel=my_ch,
@@ -328,6 +447,7 @@ def app_mentioned(event_data):
     else:
         channel = event_data["event"]["channel"]
         text = event_data["event"]["text"]
+        msg = text
         # DB에 데이터 저장
         # 메세지 보내기
         send_message(text, channel)
