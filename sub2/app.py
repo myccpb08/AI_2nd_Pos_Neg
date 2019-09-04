@@ -11,17 +11,21 @@ from slack import WebClient
 from slackeventsapi import SlackEventAdapter
 from scipy.sparse import lil_matrix
 
-import json
-import re
 import requests
 from slack.web.classes import extract_json
 from slack.web.classes.blocks import *
 from slack.web.classes.elements import *
 from slack.web.classes.interactions import MessageInteractiveEvent
 
+from scipy.sparse import lil_matrix
+from retrain import read_data, tokenize
+from sklearn.naive_bayes import MultinomialNB
+from sklearn import linear_model
+
+
 # slack 연동 정보 입력 부분
-SLACK_TOKEN = "xoxb-724397827219-739240775904-5fQc8gC6RkZRx0MTFu2ol2Ia"
-SLACK_SIGNING_SECRET = "f8cdb41515e9fa9fafdcf64c57ac3850"
+SLACK_TOKEN = "xoxb-731614402629-733495701111-6QglObMVmrUpPNSJz4bob0Vo"
+SLACK_SIGNING_SECRET = "33d0b00dfeb6ab2a156b78392ccb01b1"
 
 app = Flask(__name__)
 
@@ -31,10 +35,12 @@ slack_web_client = WebClient(token=SLACK_TOKEN)
 
 # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
 pickle_obj = open('model.clf', 'rb')
-
-clf = pickle.load(pickle_obj)
-clf2 = pickle.load(pickle_obj)
+clf = pickle.load(pickle_obj)  # naive bayes
+clf2 = pickle.load(pickle_obj)  # Logistic Regression
+clf3 = pickle.load(pickle_obj)  # SVM
 word_indices = pickle.load(pickle_obj)
+clf4 = pickle.load(pickle_obj)  # 의사결정트리
+
 neg = 0
 pos = 0
 msg = ""
@@ -181,6 +187,50 @@ def data_training():
     return chk
 
 
+# 결과값이 틀린 경우 데이터를 DB에 저장
+def add_data(message):
+    chk = True
+    # db저장 구현
+
+    return chk
+
+# 추가 데이터 트레이닝
+
+
+def data_training():
+    chk = True
+    # DB에 저장된 데이터 개수 확인
+    # DB에 데이터가 10개 미만일 경우 chk -> false
+
+    # DB에 데이터가 10개 이상일 경우 chk -> true
+    # 추가 데이터 트레이닝
+    # DB 데이터 삭제
+    """
+    train_data = read_date()
+    train_docs = tokenize(train_data)
+
+    X = lil_matrix((len(train_docs), len(word_indices)))
+    Y = np.zeros(len(train_docs))
+
+    for idx in range(len(train_docs)):
+        temp = [0]*len(word_indices)
+        for verb in train_docs[idx]:
+            part = verb.split('/')[0]
+            if word_indices.get(part)!=None:
+                temp[word_indices[part]]=1
+        X[idx]=temp
+
+    for idx in range(len(train_data)):
+        part = train_data[idx][2].split('\n')[0]
+        Y[idx]=part
+    
+    clf.partial_fit(X, Y) # naive Bayes
+    clf2.partial_fit(X, Y) # Logistic
+    clf3.partial_fit(X, Y) # SVM
+    """
+    return chk
+
+
 def send_message(text, ch):
     global neg, pos
     global output
@@ -278,7 +328,6 @@ def app_mentioned(event_data):
     global msg
     channel = event_data["event"]["channel"]
     text = event_data["event"]["text"]
-
     # 메세지 보내기
     send_message(text, channel)
     # DB에 데이터 저장

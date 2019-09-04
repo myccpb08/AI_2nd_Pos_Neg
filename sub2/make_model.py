@@ -8,6 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn import linear_model
 
 import json
 import os
@@ -140,7 +141,19 @@ print("8. ___Y, Y_test processing Complete____")
 clf  <- Naive baysian mdoel
 clf2 <- Logistic regresion model
 """
+# Req 1-2-1. Naive baysian mdoel 학습
+NB = MultinomialNB()
+NB.fit(X, Y)
 
+# # Req 1-2-2. Logistic regresion mdoel 학습
+LR = linear_model.SGDClassifier(loss='log', max_iter=2000, tol=1e-3, shuffle=False)
+LR.fit(X, Y)
+# SVM 학습
+SVM = linear_model.SGDClassifier(loss='hinge', max_iter=2000, tol=1e-3, shuffle=False)
+SVM.fit(X, Y)
+print("Naive bayesian classifier accuracy: {:.3f}".format(NB.score(X_test, Y_test)))
+print("Logistic regression accuracy: {:.3f}".format(LR.score(X_test, Y_test)))
+print("Logistic regression accuracy: {:.3f}".format(SVM.score(X_test, Y_test)))
 # Decision Tree
 # clf3 <- Decision Tree
 tree = DecisionTreeClassifier(max_depth=X.shape[0], random_state = 0)
@@ -149,40 +162,26 @@ print("의사결정트리")
 print("훈련 세트 정확도: {:.3f}".format(tree.score(X, Y)))
 print("훈련 세트 정확도: {:.3f}".format(tree.score(X_test, Y_test)))
 
+fl = open('model.clf', 'wb')
+pickle.dump(NB, fl)
+pickle.dump(LR, fl)
+pickle.dump(SVM, fl)
+pickle.dump(word_indices, fl)
+pickle.dump(tree, fl)
+fl.close
 # RandomForest
 # clf4 <= RandomForest
-forest = RandomForestClassifier(n_estimators= 1000, random_state=2)
-forest.fit(X, Y)
-print("랜덤포레스트")
-print("훈련 세트 정확도: {:3f}".format(forest.score(X, Y)))
-print("훈련 세트 정확도: {:3f}".format(forest.score(X_test, Y_test)))
-
-# Req 1-2-1. Naive baysian mdoel 학습
-clf = MultinomialNB().fit(X, Y)
-
-# # # Req 1-2-2. Logistic regresion mdoel 학습
-# clf2 = LogisticRegression(solver='lbfgs').fit(X,Y)
-
-# y_pred_temp = []
-# y_pred_temp2 = []
-# for data in X_test:
-#     y_pred_temp.append(clf.predict(data)[0])
-#     y_pred_temp2.append(clf2.predict(data)[0])
-# y_pred_NB = np.array(y_pred_temp)
-# y_pred_LR = np.array(y_pred_temp2)
-
-# print("Naive bayesian classifier accuracy: {}".format(accuracy_score(Y_test, y_pred_NB)))
-# print("Logistic regression accuracy: {}".format(accuracy_score(Y_test, y_pred_LR)))
+# forest = RandomForestClassifier(n_estimators= 1000, random_state=2)
+# forest.fit(X, Y)
+# print("랜덤포레스트")
+# print("훈련 세트 정확도: {:3f}".format(forest.score(X, Y)))
+# print("훈련 세트 정확도: {:3f}".format(forest.score(X_test, Y_test)))
 
 # """
 # 데이터 저장 파트
 # """
 
 # # Req 1-4. pickle로 학습된 모델 데이터 저장
-# fl = open('model.clf', 'wb')
-# pickle.dump(clf, fl)
-# pickle.dump(clf2, fl)
-# pickle.dump(word_indices, fl)
-# pickle.dump(tree, fl)
+# fl = open('model2.clf', 'wb')
 # pickle.dump(forest, fl)
 # fl.close
