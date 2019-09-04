@@ -5,19 +5,24 @@ import numpy as np
 import time
 import json
 
+
 from konlpy.tag import Okt
 from flask import Flask, request, make_response, Response
 from slack import WebClient
 from slackeventsapi import SlackEventAdapter
 from scipy.sparse import lil_matrix
 
-import json
-import re
 import requests
 from slack.web.classes import extract_json
 from slack.web.classes.blocks import *
 from slack.web.classes.elements import *
 from slack.web.classes.interactions import MessageInteractiveEvent
+
+from scipy.sparse import lil_matrix
+from retrain import read_data, tokenize
+from sklearn.naive_bayes import MultinomialNB
+from sklearn import linear_model
+
 
 # slack 연동 정보 입력 부분
 SLACK_TOKEN = "xoxb-720220358483-738701955364-q3tCkTnPKzSFEQbW2a8vnrWm"
@@ -30,10 +35,12 @@ slack_web_client = WebClient(token=SLACK_TOKEN)
 
 # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
 pickle_obj = open('model.clf', 'rb')
-
-clf = pickle.load(pickle_obj)
-clf2 = pickle.load(pickle_obj)
+clf = pickle.load(pickle_obj) # naive bayes
+clf2 = pickle.load(pickle_obj) # Logistic Regression
+clf3 = pickle.load(pickle_obj) # SVM
+clf4 = pickle.load(pickle_obj) # 의사결정트리
 word_indices = pickle.load(pickle_obj)
+
 neg = 0
 pos = 0
 msg = ""
@@ -103,8 +110,29 @@ def data_training():
     # DB에 데이터가 10개 이상일 경우 chk -> true
     # 추가 데이터 트레이닝
     # DB 데이터 삭제
+    """
+    train_data = read_date()
+    train_docs = tokenize(train_data)
 
+    X = lil_matrix((len(train_docs), len(word_indices)))
+    Y = np.zeros(len(train_docs))
+
+    for idx in range(len(train_docs)):
+        temp = [0]*len(word_indices)
+        for verb in train_docs[idx]:
+            part = verb.split('/')[0]
+            if word_indices.get(part)!=None:
+                temp[word_indices[part]]=1
+        X[idx]=temp
+
+    for idx in range(len(train_data)):
+        part = train_data[idx][2].split('\n')[0]
+        Y[idx]=part
     
+    clf.partial_fit(X, Y) # naive Bayes
+    clf2.partial_fit(X, Y) # Logistic
+    clf3.partial_fit(X, Y) # SVM
+    """
     return chk
 
 def send_message(text, ch):
@@ -113,13 +141,15 @@ def send_message(text, ch):
     test_doc = preprocess(text.split("> ")[1])
     predict_NB = classify(test_doc, clf)
     predict_LR = classify(test_doc, clf2)
+    predict_SVM = classify(test_doc, clf3)
+    predict_DTC = classify(test_doc, clf4)
     
     if neg > pos:
         result = "negative"
-        img = "https://i.pinimg.com/originals/2c/21/8f/2c218fa1247ce35d20cb618e9f3049d4.gif"
+        img = "https://imgur.com/did2MlP.gif"
     else:
         result = "positive"
-        img = "https://img1.daumcdn.net/thumb/R800x0/?scode=mtistory2&fname=https%3A%2F%2Ft1.daumcdn.net%2Fcfile%2Ftistory%2F99A4654C5C63B09028"
+        img = "https://imgur.com/PbSZgsW.gif"
 
     neg = 0
     pos = 0
@@ -134,17 +164,24 @@ def send_message(text, ch):
             "text": result,
             "fields":[
                 {
-                    "title": "Naive baysian model",
+                    "title": "Naive Baysian model",
                     "value": predict_NB,
                     "short": True
                 },
                 {
-                    "title": "Logistic regresion model",
+                    "title": "Logistic Regresion model",
                     "value": predict_LR,
                     "short": True
                 },
                 {
-
+                    "title": "Support Vector Machine model",
+                    "value": predict_SVM,
+                    "short": True
+                },
+                {
+                    "title": "Decision Tree Classifier model",
+                    "value": predict_DTC,
+                    "short": True
                 }
             ],
             "actions": [
@@ -198,13 +235,20 @@ def on_button_click():
 @slack_events_adaptor.on("app_mention")
 def app_mentioned(event_data):
     global msg
-    channel = event_data["event"]["channel"]
-    text = event_data["event"]["text"]
-    msg = text.split("> ")[1]
-    # DB에 데이터 저장
-    save_text_to_db(text)
-    # 메세지 보내기
-    send_message(text, channel)
+    retry_reason = request.headers.get("x-slack-retry-reason")
+    retry_count = request.headers.get("x-slack-retry-num")
+    if retry_count:
+        return make_response('No', 200, {"X-Slack-No-Retry": 1})
+    else:
+        channel = event_data["event"]["channel"]
+        text = event_data["event"]["text"]
+        msg = text.split("> ")[1]
+        # DB에 데이터 저장
+        # 메세지 보내기
+        send_message(text, channel)
+        save_text_to_db(text)
+    make_response('No', 200, {"X-Slack-No-Retry": 1})
+    
 
 @app.route("/", methods=["GET"])
 def index():
