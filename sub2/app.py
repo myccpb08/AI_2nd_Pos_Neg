@@ -144,10 +144,10 @@ def send_message(text, ch):
     
     if neg > pos:
         result = "negative"
-        img = "https://i.pinimg.com/originals/2c/21/8f/2c218fa1247ce35d20cb618e9f3049d4.gif"
+        img = "https://imgur.com/did2MlP.gif"
     else:
         result = "positive"
-        img = "https://img1.daumcdn.net/thumb/R800x0/?scode=mtistory2&fname=https%3A%2F%2Ft1.daumcdn.net%2Fcfile%2Ftistory%2F99A4654C5C63B09028"
+        img = "https://imgur.com/PbSZgsW.gif"
 
     neg = 0
     pos = 0
@@ -226,13 +226,24 @@ def on_button_click():
 @slack_events_adaptor.on("app_mention")
 def app_mentioned(event_data):
     global msg
-    channel = event_data["event"]["channel"]
-    text = event_data["event"]["text"]
-    msg = text.split("> ")[1]
-    # DB에 데이터 저장
-    save_text_to_db(text)
-    # 메세지 보내기
-    send_message(text, channel)
+    retry_reason = request.headers.get("x-slack-retry-reason")
+    retry_count = request.headers.get("x-slack-retry-num")
+    if retry_count:
+        return make_response('No', 200, {"X-Slack-No-Retry": 1})
+    else:
+        channel = event_data["event"]["channel"]
+        # slack_web_client.chat_postMessage(
+        #     channel=channel, 
+        #     text="기다려요"
+        # )
+        text = event_data["event"]["text"]
+        msg = text.split("> ")[1]
+        # DB에 데이터 저장
+        # 메세지 보내기
+        send_message(text, channel)
+        save_text_to_db(text)
+    make_response('No', 200, {"X-Slack-No-Retry": 1})
+    
 
 @app.route("/", methods=["GET"])
 def index():
