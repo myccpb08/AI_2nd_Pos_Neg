@@ -343,7 +343,7 @@ def send_naver_message(ch):
     global output
     global msg
 
-    pickle_obj = open('model3.clf', 'rb')
+    pickle_obj = open('naver_model.clf', 'rb')
     n_clf = pickle.load(pickle_obj) # naive bayes
     n_clf2 = pickle.load(pickle_obj) # Logistic Regression
     n_clf3 = pickle.load(pickle_obj) # SVM

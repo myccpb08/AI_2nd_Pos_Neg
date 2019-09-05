@@ -53,7 +53,7 @@ def tokenize(doc):
 
 # train, test 데이터 읽기
 train_data = read_data('naver_reple.txt')
-test_data = read_data('ratings_test_test.txt')
+test_data = read_data('ratings_test.txt')
 
 print("1. ___Data preprocessing complete____")
 
@@ -162,7 +162,7 @@ print("의사결정트리")
 print("훈련 세트 정확도: {:.3f}".format(tree.score(X, Y)))
 print("훈련 세트 정확도: {:.3f}".format(tree.score(X_test, Y_test)))
 
-fl = open('model3.clf', 'wb')
+fl = open('naver_model.clf', 'wb')
 pickle.dump(NB, fl)
 pickle.dump(LR, fl)
 pickle.dump(SVM, fl)
