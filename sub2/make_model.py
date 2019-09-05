@@ -138,7 +138,7 @@ print("8. ___Y, Y_test processing Complete____")
 
 """
 트레이닝 파트
-clf  <- Naive baysian mdoel
+clf  <- Naive baysian model
 clf2 <- Logistic regresion model
 """
 # Req 1-2-1. Naive baysian mdoel 학습

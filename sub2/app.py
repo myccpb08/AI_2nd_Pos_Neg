@@ -24,8 +24,8 @@ from sklearn import linear_model
 
 
 # slack 연동 정보 입력 부분
-SLACK_TOKEN = "xoxb-731614402629-733495701111-6QglObMVmrUpPNSJz4bob0Vo"
-SLACK_SIGNING_SECRET = "33d0b00dfeb6ab2a156b78392ccb01b1"
+SLACK_TOKEN = "xoxb-720220358483-738701955364-q3tCkTnPKzSFEQbW2a8vnrWm"
+SLACK_SIGNING_SECRET = "61d52b36a564138f59046147325dcfe4"
 
 app = Flask(__name__)
 
