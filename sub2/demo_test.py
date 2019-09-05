@@ -197,7 +197,6 @@ def classify(sentence, test_clf, model_name):
 
     return predict_result
 
-
 def send_message(sentence):
     global neg, pos
     global output
