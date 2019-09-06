@@ -12,10 +12,6 @@ from sklearn import linear_model
 from flask import Flask, request, make_response, Response
 from slack import WebClient
 from slackeventsapi import SlackEventAdapter
-from slack.web.classes import extract_json
-from slack.web.classes.blocks import *
-from slack.web.classes.elements import *
-from slack.web.classes.interactions import MessageInteractiveEvent
 
 from retrain import read_data, tokenize
 
@@ -25,16 +21,15 @@ SLACK_SIGNING_SECRET = "33d0b00dfeb6ab2a156b78392ccb01b1"
 
 app = Flask(__name__)
 
-slack_events_adaptor = SlackEventAdapter(
-    SLACK_SIGNING_SECRET, "/listening", app)
+slack_events_adaptor = SlackEventAdapter(SLACK_SIGNING_SECRET, "/listening", app)
 slack_web_client = WebClient(token=SLACK_TOKEN)
 
 # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
 pickle_obj = open('origin_model.clf', 'rb')
-clf = pickle.load(pickle_obj) # naive bayes
-clf2 = pickle.load(pickle_obj) # Logistic Regression
-clf3 = pickle.load(pickle_obj) # SVM
-clf4 = pickle.load(pickle_obj) # 의사결정트리
+NB = pickle.load(pickle_obj) # naive bayes
+LR = pickle.load(pickle_obj) # Logistic Regression
+SVM = pickle.load(pickle_obj) # SVM
+DT = pickle.load(pickle_obj) # 의사결정트리
 word_indices = pickle.load(pickle_obj)
 
 neg = 0
@@ -42,7 +37,7 @@ pos = 0
 msg = ""
 
 output = -1  # 트레이닝결과값 0/1을 db에 쓰기위한 초기화 변수
-beforeTrainDataIdx = 0  # 까지 학습했다.를 저장하는 전역변수로 사용
+beforeTrainDataIdx = 0 
 
 # Req 2-2-2. 토큰화 및 one-hot 임베딩하는 전 처리
 pos_tagger = Okt()
@@ -77,7 +72,7 @@ def classify(sentence, test_clf, model_name):
 
     predict_result = int(predict(sentence, test_clf))
 
-    if model_name=="NB" or model_name=="DTC":
+    if model_name=="NB" or model_name=="DT":
         neg += test_clf.predict_proba(sentence)[0][0]
         pos += test_clf.predict_proba(sentence)[0][1]
 
@@ -92,10 +87,10 @@ def send_message(sentence, ch):
     global output
 
     Word_vector = preprocess(sentence.split("> ")[1], word_indices)
-    predict_NB = classify(Word_vector, clf, "NB")
-    predict_LR = classify(Word_vector, clf2, "LR")
-    predict_SVM = classify(Word_vector, clf3, "SVM")
-    predict_DTC = classify(Word_vector, clf4, "DTC")
+    predict_NB = classify(Word_vector, NB, "NB")
+    predict_LR = classify(Word_vector, LR, "LR")
+    predict_SVM = classify(Word_vector, SVM, "SVM")
+    predict_DT = classify(Word_vector, DT, "DT")
 
     if neg > pos:
         result = "negative"
@@ -135,7 +130,7 @@ def send_message(sentence, ch):
                 },
                 {
                     "title": "Decision Tree Classifier model",
-                    "value": predict_DTC,
+                    "value": predict_DT,
                     "short": True
                 }
             ],
@@ -172,21 +167,20 @@ def send_message(sentence, ch):
 # 네이버 데이터 셋 결과
 def send_naver_message(ch):
     global neg, pos
-    global output
     global msg
 
     pickle_obj = open('naver_model.clf', 'rb')
-    n_clf = pickle.load(pickle_obj) # naive bayes
-    n_clf2 = pickle.load(pickle_obj) # Logistic Regression
-    n_clf3 = pickle.load(pickle_obj) # SVM
-    n_clf4 = pickle.load(pickle_obj) # 의사결정트리
-    n_word_indices = pickle.load(pickle_obj)
+    naver_NB = pickle.load(pickle_obj) # naive bayes
+    naver_LR = pickle.load(pickle_obj) # Logistic Regression
+    naver_SVM = pickle.load(pickle_obj) # SVM
+    naver_DT = pickle.load(pickle_obj) # 의사결정트리
+    naver_word_indices = pickle.load(pickle_obj)
 
-    test_doc = preprocess(msg.split("> ")[1], n_word_indices)
-    predict_NB = classify(test_doc, n_clf, "NB")
-    predict_LR = classify(test_doc, n_clf2, "LR")
-    predict_SVM = classify(test_doc, n_clf3, "SVM")
-    predict_DTC = classify(test_doc, n_clf4, "DTC")
+    test_doc = preprocess(msg.split("> ")[1], naver_word_indices)
+    predict_NB = classify(test_doc, naver_NB, "NB")
+    predict_LR = classify(test_doc, naver_LR, "LR")
+    predict_SVM = classify(test_doc, naver_SVM, "SVM")
+    predict_DT = classify(test_doc, naver_DT, "DT")
     
     if neg > pos:
         result = "negative"
@@ -223,7 +217,7 @@ def send_naver_message(ch):
                 },
                 {
                     "title": "Decision Tree Classifier model",
-                    "value": predict_DTC,
+                    "value": predict_DT,
                     "short": True
                 }
             ],
@@ -319,7 +313,7 @@ def data_training():
         print("트레이닝 파일 쓰기완료")
         f.close()
 
-        beforeTrainDataIdx = recent_idx  # 현재 데이터까지 학습했음을 저장
+        beforeTrainDataIdx = recent_idx  
         print("{} idx 까지 학습완료".format(beforeTrainDataIdx))
         chk = True
         
@@ -344,24 +338,23 @@ def data_training():
             part = train_data[idx][2].split('\n')[0]
             Y[idx]=part
         print('Y label')
-        clf.partial_fit(X, Y) # naive Bayes
+        NB.partial_fit(X, Y) # naive Bayes
         print('naive')
-        clf2.partial_fit(X, Y) # Logistic
+        LR.partial_fit(X, Y) # Logistic
         print('logistic')
-        clf3.partial_fit(X, Y) # SVM
+        SVM.partial_fit(X, Y) # SVM
         print('SVM')
 
         fl = open('origin_model.clf', 'wb')
-        pickle.dump(clf, fl)
-        pickle.dump(clf2, fl)
-        pickle.dump(clf3, fl)
-        pickle.dump(clf4, fl)
+        pickle.dump(NB, fl)
+        pickle.dump(LR, fl)
+        pickle.dump(SVM, fl)
+        pickle.dump(DT, fl)
         pickle.dump(word_indices, fl)
         fl.close()
 
     cur.close()
    
-    # DB 데이터 삭제
     return chk
 
 
@@ -373,8 +366,8 @@ def index():
 @slack_events_adaptor.on("app_mention")
 def app_mentioned(event_data):
     global msg
-    retry_reason = request.headers.get("x-slack-retry-reason")
     retry_count = request.headers.get("x-slack-retry-num")
+    
     if retry_count:
         return make_response('No', 200, {"X-Slack-No-Retry": 1})
     else:
