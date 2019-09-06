@@ -411,5 +411,5 @@ def on_button_click():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='172.26.8.106')
    
