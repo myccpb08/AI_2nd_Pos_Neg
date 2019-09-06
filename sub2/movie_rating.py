@@ -6,17 +6,18 @@ from scipy.sparse import lil_matrix
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import linear_model
+
+import os
 
 pos_tagger = Okt()
-# print(pos_tagger.nouns('한국어 분석을 시작합니다'))
-# print(pos_tagger.morphs('한국어 분석을 시작합니다'))
-# print(pos_tagger.pos('한국어 분석을 시작합니다'))
 
 """
 Req 1-1-1. 데이터 읽기
 read_data(): 데이터를 읽어서 저장하는 함수
 """
-
 
 def read_data(filename):
     data = []
@@ -33,7 +34,6 @@ Req 1-1-2. 토큰화 함수
 tokenize(): 텍스트 데이터를 받아 KoNLPy의 okt 형태소 분석기로 토크나이징
 """
 
-
 def tokenize(doc):
     total_pos = []
     for sentence in doc:
@@ -44,21 +44,31 @@ def tokenize(doc):
 
     return total_pos
 
-
 """
 데이터 전 처리
 """
+print("=======================================================")
+print("|\t학습데이터를 선택해주세요")
+print("|\t1.IMDB 데이터")
+print("|\t2.네이버 크롤링 데이터")
+select = int(input("|\t선택: "))
+print("=======================================================")
 
 # train, test 데이터 읽기
-train_data = read_data('ratings_train_test.txt')
+if select == 1:
+    train_data = read_data('ratings_train.txt')
+elif select == 2:
+    train_data = read_data('naver_reple.txt')
 test_data = read_data('ratings_test.txt')
 
+print("1. ___Data preprocessing complete____")
 
 # Req 1-1-2. 문장 데이터 토큰화
 # train_docs, test_docs : 토큰화된 트레이닝, 테스트  문장에 label 정보를 추가한 list
 train_docs = tokenize(train_data)
 test_docs = tokenize(test_data)
 
+print("2. ___Data Tokenization complete____")
 
 # Req 1-1-3. word_indices 초기화
 
@@ -72,8 +82,8 @@ for part in train_docs:
         if word_indices.get(meaning) == None:
             word_indices[meaning] = idx
             idx += 1
-# print(word_indices)
-# print(word_indices)
+
+print("3. ___Word Indice Complete____")
 
 # Req 1-1-4. sparse matrix 초기화
 # X: train feature data
@@ -81,12 +91,14 @@ for part in train_docs:
 X = lil_matrix((len(train_docs), len(word_indices)))
 X_test = lil_matrix((len(test_docs), len(word_indices)))
 
+print("4. ___X, X_test sparse matrix Init____")
 # 평점 label 데이터가 저장될 Y 행렬 초기화
 # Y: train data label
 # Y_test: test data label
 Y = np.zeros(len(train_docs))
 Y_test = np.zeros(len(test_docs))
 
+print("5. ___Y, Y_test sparse matrix Init____")
 # Req 1-1-5. one-hot 임베딩
 # X,Y 벡터값 채우기
 
@@ -96,6 +108,7 @@ for idx in range(len(train_docs)):
         part = verb.split('/')[0]
         temp[word_indices[part]] = 1
     X[idx] = temp
+print("6. ___X one-hot embedding Complete____")
 
 for idx in range(len(test_docs)):
     temp = [0]*len(word_indices)
@@ -104,6 +117,7 @@ for idx in range(len(test_docs)):
         if word_indices.get(part) != None:
             temp[word_indices[part]] = 1
     X_test[idx] = temp
+print("7. ___X_test one-hot embedding Complete____")
 
 for idx in range(len(train_data)):
     part = train_data[idx][2].split('\n')[0]
@@ -113,7 +127,7 @@ for idx in range(len(test_data)):
     part = test_data[idx][2].split('\n')[0]
     Y_test[idx] = part
 
-# print(Y)
+print("8. ___Y, Y_test processing Complete____")
 
 """
 트레이닝 파트
@@ -121,55 +135,83 @@ clf  <- Naive baysian mdoel
 clf2 <- Logistic regresion model
 """
 # Req 1-2-1. Naive baysian mdoel 학습
-clf = MultinomialNB().fit(X, Y)
+NB = MultinomialNB()
+NB.fit(X, Y)
 
-# Req 1-2-2. Logistic regresion mdoel 학습
-clf2 = LogisticRegression(solver='lbfgs').fit(X, Y)
+# # Req 1-2-2. Logistic regresion mdoel 학습
+LR = linear_model.SGDClassifier(loss='log', max_iter=2000, tol=1e-3, shuffle=False)
+LR.fit(X, Y)
+# SVM 학습
+SVM = linear_model.SGDClassifier(loss='hinge', max_iter=2000, tol=1e-3, shuffle=False)
+SVM.fit(X, Y)
 
+# Decision Tree
+# clf3 <- Decision Tree
+DT = DecisionTreeClassifier(max_depth=X.shape[0], random_state = 0)
+DT.fit(X, Y)
 
-# """
-# 테스트 파트
-# """
-# print(X_test[0])
-# print(Y_test[0])
-# # Req 1-3-1. 문장 데이터에 따른 예측된 분류값 출력
+"""
+테스트 파트
+"""
+# Req 1-3-1. 문장 데이터에 따른 예측된 분류값 출력
 print("Naive bayesian classifier example result: {}, {}".format(
-    test_data[4][1], clf.predict(X_test[4])[0]))
-print("Logistic regression exampleresult: {}, {}".format(
-    test_data[4][1], clf2.predict(X_test[4])[0]))
+    test_data[4][1], NB.predict(X_test[4])[0]))
+print("Logistic regression example result: {}, {}".format(
+    test_data[4][1], LR.predict(X_test[4])[0]))
+print("Support vector machine example result: {}, {}".format(
+    test_data[4][1], SVM.predict(X_test[4])[0]))
+print("Decision tree example result: {}, {}".format(
+    test_data[4][1], DT.predict(X_test[4])[0]))
+print()
 # # Req 1-3-2. 정확도 출력
-y_pred_temp = []
-y_pred_temp2 = []
-for data in X_test:
-    y_pred_temp.append(clf.predict(data)[0])
-    y_pred_temp2.append(clf2.predict(data)[0])
-y_pred_NB = np.array(y_pred_temp)
-y_pred_LR = np.array(y_pred_temp2)
-# print(y_pred_NB)
-# print(y_pred_LR)
-# print(Y_test)
-# print(accuracy_score(y_pred_NB, Y_test))
-print("Naive bayesian classifier accuracy: {}".format(
-    accuracy_score(Y_test, y_pred_NB)))
-print("Logistic regression accuracy: {}".format(
-    accuracy_score(Y_test, y_pred_LR)))
+print("Naive bayesian classifier accuracy: {:.3f}".format(NB.score(X_test, Y_test)))
+print("Logistic regression accuracy: {:.3f}".format(LR.score(X_test, Y_test)))
+print("Support Vector Machine accuracy: {:.3f}".format(SVM.score(X_test, Y_test)))
+print("의사결정트리 훈련 세트 정확도: {:.3f}".format(DT.score(X, Y)))
+print("의사결정트리 테스트 세트 정확도: {:.3f}".format(DT.score(X_test, Y_test)))
 
 # """
 # 데이터 저장 파트
 # """
 
 # Req 1-4. pickle로 학습된 모델 데이터 저장
-fl = open('model.clf', 'wb')
-pickle.dump(clf, fl)
-pickle.dump(clf2, fl)
-pickle.dump(word_indices, fl)
-fl.close
+if select == 1:
+    fl = open('origin_model.clf', 'wb')
+    pickle.dump(NB, fl)
+    pickle.dump(LR, fl)
+    pickle.dump(SVM, fl)
+    pickle.dump(DT, fl)
+    pickle.dump(word_indices, fl)
+    fl.close()
+elif select == 2:
+    fl = open('naver_model.clf', 'wb')
+    pickle.dump(NB, fl)
+    pickle.dump(LR, fl)
+    pickle.dump(SVM, fl)
+    pickle.dump(DT, fl)
+    pickle.dump(word_indices, fl)
+    fl.close()
 
-# # Naive bayes classifier algorithm part
-# # 아래의 코드는 심화 과정이기에 사용하지 않는다면 주석 처리하고 실행합니다.
 
+print("=======================================================")
+print("|\t추가 구현 분류기를 실행하시겠습니까?")
+print("|\t1.실행")
+print("|\t2.취소")
+execution_select = int(input("|\t선택: "))
+print("=======================================================")
+execution_model = 0
+if execution_select == 1:
+    print("=======================================================")
+    print("|\t추가 구현 분류기를 선택하세요")
+    print("|\t1.Naive bayes")
+    print("|\t2.Logistic Regression")
+    execution_model = int(input("|\t선택: "))
+    print("=======================================================")
 
+# Naive bayes classifier algorithm part
+# 아래의 코드는 심화 과정이기에 사용하지 않는다면 주석 처리하고 실행합니다.
 """
+
 Naive_Bayes_Classifier 알고리즘 클래스입니다.
 """
 
@@ -331,13 +373,6 @@ class Naive_Bayes_Classifier(object):
         return answer
 
 
-# Req 3-2-1. model에 Naive_Bayes_Classifier 클래스를 사용하여 학습합니다.
-model = Naive_Bayes_Classifier()
-model.train(X, Y)
-
-# Req 3-2-2. 정확도 측정
-print("Naive_Bayes_Classifier accuracy: {}".format(model.score(X_test, Y_test)))
-
 # # Logistic regression algorithm part
 # # 아래의 코드는 심화 과정이기에 사용하지 않는다면 주석 처리하고 실행합니다.
 
@@ -473,12 +508,21 @@ class Logistic_Regression_Classifier(object):
         answer = cnt/mom*100
         return answer
 
-
-# Req 3-4-1. model2에 Logistic_Regression_Classifier 클래스를 사용하여 학습합니다.
-model2 = Logistic_Regression_Classifier()
-model2.train(X, Y)
-
-# Req 3-4-2. 정확도 측정
-
-print("Logistic_Regression_Classifier accuracy: {}".format(
-    model2.score(X_test, Y_test)))
+if execution_model == 1:
+    # Req 3-2-1. model에 Naive_Bayes_Classifier 클래스를 사용하여 학습합니다.
+    model = Naive_Bayes_Classifier()
+    model.train(X, Y)
+    # Req 3-2-2. 정확도 측정
+    print("Naive_Bayes_Classifier accuracy: {}".format(model.score(X_test, Y_test)))
+elif execution_model == 2:
+    # Req 3-4-1. model2에 Logistic_Regression_Classifier 클래스를 사용하여 학습합니다.
+    if X.shpae[0] < 60000:
+        model2 = Logistic_Regression_Classifier()
+        model2.train(X, Y)
+        # Req 3-4-2. 정확도 측정
+        print("Logistic_Regression_Classifier accuracy: {}".format(
+            model2.score(X_test, Y_test)))
+    else:
+        print("트레이닝 데이터 수가 많아 학습 불가능")
+else:
+    None

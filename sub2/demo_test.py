@@ -136,18 +136,18 @@ def data_training():
             word = train_data[idx][2].split('\n')[0]
             Y[idx]=word
         print('|\tY label')
-        clf.partial_fit(X, Y) # naive Bayes
+        NB.partial_fit(X, Y) # naive Bayes
         print('|\tnaive')
-        clf2.partial_fit(X, Y) # Logistic
+        LR.partial_fit(X, Y) # Logistic
         print('|\tlogistic')
-        clf3.partial_fit(X, Y) # SVM
+        SVM.partial_fit(X, Y) # SVM
         print('|\tSVM')
 
         fl = open('origin_model.clf', 'wb')
-        pickle.dump(clf, fl)
-        pickle.dump(clf2, fl)
-        pickle.dump(clf3, fl)
-        pickle.dump(clf4, fl)
+        pickle.dump(NB, fl)
+        pickle.dump(LR, fl)
+        pickle.dump(SVM, fl)
+        pickle.dump(DT, fl)
         pickle.dump(word_indices, fl)
         fl.close()
     cur.close()
@@ -202,10 +202,10 @@ def send_message(sentence):
     global output
 
     Word_vector = preprocess(sentence)
-    predict_NB = classify(Word_vector, clf, "NB")
-    predict_LR = classify(Word_vector, clf2, "LR")
-    predict_SVM = classify(Word_vector, clf3, "SVM")
-    predict_DTC = classify(Word_vector, clf4, "DTC")
+    predict_NB = classify(Word_vector, NB, "NB")
+    predict_LR = classify(Word_vector, LR, "LR")
+    predict_SVM = classify(Word_vector, SVM, "SVM")
+    predict_DTC = classify(Word_vector, DT, "DT")
 
     if neg > pos:
         output = 0
@@ -224,10 +224,10 @@ if __name__ == '__main__':
 
     # Req 2-2-1. pickle로 저장된 model.clf 파일 불러오기
     pickle_obj = open('origin_model.clf', 'rb')
-    clf = pickle.load(pickle_obj) # naive bayes
-    clf2 = pickle.load(pickle_obj) # Logistic Regression
-    clf3 = pickle.load(pickle_obj) # SVM
-    clf4 = pickle.load(pickle_obj) # 의사결정트리
+    NB = pickle.load(pickle_obj) # naive bayes
+    LR = pickle.load(pickle_obj) # Logistic Regression
+    SVM = pickle.load(pickle_obj) # SVM
+    DT = pickle.load(pickle_obj) # 의사결정트리
     word_indices = pickle.load(pickle_obj)
 
     # Req 2-2-2. 토큰화 및 one-hot 임베딩하는 전 처리
